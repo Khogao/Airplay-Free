@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{85FBFD09-0099-4FE9-9DB6-78DB6F60F817}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup>
+    <TargetName>foo_apx</TargetName>
+    <IntDir>$(ProjectName)\obj\</IntDir>
+    <OutDir>$(ProjectName)\out\</OutDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PreBuildEvent>
+      <Message>Deleting $(TargetFileName) from player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" ERASE /F /Q "$(FoobarDir)components\$(TargetFileName)"</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(WtlDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4652</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shared.lib;shell32.lib;user32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Copying $(TargetFileName) to player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" COPY /B /Y "$(TargetPath)" "$(FoobarDir)components\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(ProjectName)\src\FoobarPlayer.cpp" />
+    <ClCompile Include="$(ProjectName)\src\Main.cpp" />
+    <ClCompile Include="$(ProjectName)\src\Menu.cpp" />
+    <ClCompile Include="$(ProjectName)\src\Options.cpp" />
+    <ClCompile Include="$(ProjectName)\src\Output.cpp" />
+    <ClCompile Include="$(ProjectName)\src\StdAfx.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(ProjectName)\src\FoobarPlayer.h" />
+    <ClInclude Include="$(ProjectName)\src\Resources.h" />
+    <ClInclude Include="$(ProjectName)\src\StdAfx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="$(ProjectName)\src\Resources.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="rsoutput.vcxproj">
+      <Project>{0155cf28-9ab3-40c2-a9bf-8f2f245e52db}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

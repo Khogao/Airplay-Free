@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{10000000-0000-0000-0000-000000000001}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rsoutput", "rsoutput.vcproj", "{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "players", "players", "{20000000-0000-0000-0000-000000000002}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "foobar", "foobar.vcproj", "{85FBFD09-0099-4FE9-9DB6-78DB6F60F817}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB} = {0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winamp", "winamp.vcproj", "{25F1724B-BDB4-4735-8693-4566178105E2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB} = {0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xmplay", "xmplay.vcproj", "{1D12184C-DA31-4058-9444-ED4F52726ADC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB} = {0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}.Debug|Win32.Build.0 = Debug|Win32
+		{85FBFD09-0099-4FE9-9DB6-78DB6F60F817}.Debug|Win32.ActiveCfg = Debug|Win32
+		{85FBFD09-0099-4FE9-9DB6-78DB6F60F817}.Debug|Win32.Build.0 = Debug|Win32
+		{25F1724B-BDB4-4735-8693-4566178105E2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{25F1724B-BDB4-4735-8693-4566178105E2}.Debug|Win32.Build.0 = Debug|Win32
+		{1D12184C-DA31-4058-9444-ED4F52726ADC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1D12184C-DA31-4058-9444-ED4F52726ADC}.Debug|Win32.Build.0 = Debug|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB} = {10000000-0000-0000-0000-000000000001}
+		{85FBFD09-0099-4FE9-9DB6-78DB6F60F817} = {20000000-0000-0000-0000-000000000002}
+		{25F1724B-BDB4-4735-8693-4566178105E2} = {20000000-0000-0000-0000-000000000002}
+		{1D12184C-DA31-4058-9444-ED4F52726ADC} = {20000000-0000-0000-0000-000000000002}
+	EndGlobalSection
+EndGlobal

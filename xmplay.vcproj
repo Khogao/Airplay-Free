@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectGUID="{1D12184C-DA31-4058-9444-ED4F52726ADC}"
+	ProjectType="Visual C++"
+	Version="9.00"
+	Name="xmplay"
+	>
+	<Platforms>
+		<Platform
+			Name="Win32"
+		/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory="$(ProjectName)\out"
+			IntermediateDirectory="$(ProjectName)\obj"
+			ConfigurationType="2"
+			CharacterSet="1"
+			ExcludeBuckets="5;6;8;10;13;14;15;16;18"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				Description="Deleting $(TargetFileName) from player directory..."
+				CommandLine="IF EXIST &quot;%ProgramFiles%\XMPlay\&quot; ERASE /F /Q &quot;%ProgramFiles%\XMPlay\$(TargetFileName)&quot;"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="$(ProjectName)\sdk;rsoutput\sdk"
+				PreprocessorDefinitions="NOMINMAX;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				WarningLevel="4"
+				DebugInformationFormat="3"
+				DisableSpecificWarnings="4100"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="shell32.lib user32.lib $(NOINHERIT)"
+				OutputFile="$(OutDir)\xmp-apx.dll"
+				LinkIncremental="1"
+				GenerateManifest="false"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copying $(TargetFileName) to player directory..."
+				CommandLine="IF EXIST &quot;%ProgramFiles%\XMPlay\&quot; COPY /B /Y &quot;$(TargetPath)&quot; &quot;%ProgramFiles%\XMPlay\&quot;"
+			/>
+		</Configuration>
+	</Configurations>
+	<Files>
+		<File
+			RelativePath="$(ProjectName)\src\Main.cpp"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\Output.cpp"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\Output.h"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\Resources.h"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\Resources.rc"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\XMPlayPlayer.cpp"
+			>
+		</File>
+		<File
+			RelativePath="$(ProjectName)\src\XMPlayPlayer.h"
+			>
+		</File>
+	</Files>
+</VisualStudioProject>

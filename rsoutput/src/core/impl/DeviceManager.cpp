@@ -14,20 +14,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ConnectDialog.h"
 #include "Debugger.h"
 #include "DeviceDiscovery.h"
 #include "DeviceManager.h"
-#include "MessageDialog.h"
+#include "ServiceDiscovery.h"
 #include "Options.h"
-#include "PasswordDialog.h"
 #include "Uncopyable.h"
 #include "raop/RAOPDevice.h"
 #include "raop/RAOPEngine.h"
 #include <cassert>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 #include <Poco/Format.h>
+#include <Poco/Event.h>
+#include <Poco/Net/SocketAddress.h>
+#include <Poco/Net/IPAddress.h>
 #include <Poco/Timespan.h>
 #include <Poco/Timestamp.h>
 #include <Poco/Net/StreamSocket.h>
@@ -36,6 +38,78 @@
 using Poco::Timespan;
 using Poco::Timestamp;
 using Poco::Net::StreamSocket;
+
+
+namespace {
+
+class DeviceConnector : public ServiceDiscovery::ResolveListener, public ServiceDiscovery::QueryListener {
+public:
+    DeviceConnector(const DeviceInfo& device) : _device(device), _port(0), _resolved(false), _sdRef(NULL) {}
+
+    void connect(Poco::Net::StreamSocket& socket) {
+        if (_device.isZeroConf()) {
+            _sdRef = ServiceDiscovery::resolveService(_device.addr().first, _device.addr().second, *this);
+            ServiceDiscovery::start(_sdRef);
+            
+            try {
+                if (!_event.tryWait(5000)) { // 5 seconds timeout
+                    if (_sdRef) {
+                        ServiceDiscovery::stop(_sdRef);
+                        _sdRef = NULL;
+                    }
+                    throw std::runtime_error("Timeout resolving device service");
+                }
+            } catch (...) {
+                if (_sdRef) {
+                    ServiceDiscovery::stop(_sdRef);
+                    _sdRef = NULL;
+                }
+                throw;
+            }
+            
+            if (_sdRef) {
+                ServiceDiscovery::stop(_sdRef);
+                _sdRef = NULL;
+            }
+
+            if (!_resolved) {
+                 throw std::runtime_error("Failed to resolve device address");
+            }
+            socket.connect(_resolvedAddress);
+        } else {
+            std::string hostAndPort = _device.addr().first + ":" + _device.addr().second;
+            socket.connect(Poco::Net::SocketAddress(hostAndPort));
+        }
+    }
+
+    // ResolveListener
+    void onServiceResolved(DNSServiceRef sdRef, std::string fullName, std::string host, uint16_t port, const ServiceDiscovery::TXTRecord& txt) override {
+         ServiceDiscovery::stop(sdRef);
+         _sdRef = NULL; 
+         _port = port;
+         _sdRef = ServiceDiscovery::queryService(host, kDNSServiceType_A, *this);
+         ServiceDiscovery::start(_sdRef);
+    }
+
+    // QueryListener
+    void onServiceQueried(DNSServiceRef sdRef, std::string rrname, uint16_t rrtype, uint16_t rdlen, const void* rdata, uint32_t ttl) override {
+         ServiceDiscovery::stop(sdRef);
+         _sdRef = NULL;
+         _resolvedAddress = Poco::Net::SocketAddress(Poco::Net::IPAddress(rdata, rdlen), _port);
+         _resolved = true;
+         _event.set();
+    }
+
+private:
+    const DeviceInfo& _device;
+    Poco::Event _event;
+    DNSServiceRef _sdRef;
+    uint16_t _port;
+    Poco::Net::SocketAddress _resolvedAddress;
+    bool _resolved;
+};
+
+}
 
 
 // shorthand for accessing the implementation type of device output sink
@@ -104,7 +178,7 @@ void DeviceManager::openDevices()
 		{
 			lastAlertTime.update();
 
-			MessageDialog("No remote speakers are selected for output.").doModal();
+			std::cerr << "No remote speakers are selected for output." << std::endl;
 		}
 	}
 }
@@ -311,10 +385,10 @@ Device::SharedPtr DeviceManager::createDevice(const DeviceInfo& deviceInfo)
 
 	default:
 		const std::string message(Poco::format(
-			"Unable to playback to remote speakers \"%s\".\r\n\r\n"
+			"Unable to playback to remote speakers \"%s\".\n"
 			"Device type (%i) is unsupported at this time.",
 			deviceInfo.name(), (int) deviceInfo.type()));
-		MessageDialog(message).doModal();
+		std::cerr << message << std::endl;
 
 		throw std::runtime_error(message);
 	}
@@ -344,15 +418,16 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			// run dialog box that will asynchronously resolve service name to
 			// host and port, resolve host to IP address and connect to address
 			// and port
-			ConnectDialog connectDialog(deviceInfo);
-			if (connectDialog.doModal() != 0)
-			{
+            StreamSocket socket;
+            try {
+                DeviceConnector connector(deviceInfo);
+                connector.connect(socket);
+            } catch (const std::exception& e) {
 				const std::string message(Poco::format(
-					"Unable to connect to remote speakers \"%s\".",
-					deviceInfo.name()));
+					"Unable to connect to remote speakers \"%s\": %s",
+					deviceInfo.name(), std::string(e.what())));
 				throw std::runtime_error(message);
-			}
-			StreamSocket& socket = connectDialog.socket();
+            }
 
 			Debugger::printf("Connected to remote speakers \"%s\" at %s.",
 				deviceInfo.name().c_str(), socket.peerAddress().toString().c_str());
@@ -368,15 +443,8 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				if (options->getPassword(deviceInfo.name()).empty())
 				{
 					// prompt user for password
-					PasswordDialog passwordDialog(deviceInfo.name());
-					if (passwordDialog.doModal(_player.window()))
-					{
-						throw std::invalid_argument("No password entered.");
-					}
-
-					options->setPassword(deviceInfo.name(),
-						passwordDialog.password(),
-						passwordDialog.rememberPassword());
+                    std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
+					throw std::invalid_argument("Password required but not provided.");
 				}
 
 				device->setPassword(options->getPassword(deviceInfo.name()));
@@ -398,9 +466,9 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			if (returnCode)
 			{
 				const std::string message(Poco::format(
-					"Unable to initiate session with remote speakers \"%s\".\r\n\r\n"
+					"Unable to initiate session with remote speakers \"%s\".\n"
 					"Error code: %i", deviceInfo.name(), returnCode));
-				MessageDialog(message, MB_ICONERROR).doModal();
+				std::cerr << message << std::endl;
 
 				throw std::runtime_error(message);
 			}
@@ -419,15 +487,16 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			// run dialog box that will asynchronously resolve service name to
 			// host and port, resolve host to IP address and connect to address
 			// and port
-			ConnectDialog connectDialog(deviceInfo);
-			if (connectDialog.doModal() != 0)
-			{
+            StreamSocket socket;
+            try {
+                DeviceConnector connector(deviceInfo);
+                connector.connect(socket);
+            } catch (const std::exception& e) {
 				const std::string message(Poco::format(
-					"Unable to connect to remote speakers \"%s\".",
-					deviceInfo.name()));
+					"Unable to connect to remote speakers \"%s\": %s",
+					deviceInfo.name(), std::string(e.what())));
 				throw std::runtime_error(message);
-			}
-			StreamSocket& socket = connectDialog.socket();
+            }
 
 			AudioJackStatus audioJackStatus = AUDIO_JACK_CONNECTED;
 
@@ -443,15 +512,8 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				if (options->getPassword(deviceInfo.name()).empty())
 				{
 					// prompt user for password
-					PasswordDialog passwordDialog(deviceInfo.name());
-					if (passwordDialog.doModal(_player.window()))
-					{
-						throw std::invalid_argument("No password entered.");
-					}
-
-					options->setPassword(deviceInfo.name(),
-						passwordDialog.password(),
-						passwordDialog.rememberPassword());
+                    std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
+					throw std::invalid_argument("Password required but not provided.");
 				}
 
 				device->setPassword(options->getPassword(deviceInfo.name()));
@@ -476,16 +538,16 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 					const std::string message(Poco::format(
 						"Remote speakers \"%s\" are in use by another player.",
 						deviceInfo.name()));
-					MessageDialog(message).doModal();
+					std::cerr << message << std::endl;
 
 					throw std::runtime_error(message);
 				}
 				else
 				{
 					const std::string message(Poco::format(
-						"Unable to connect to remote speakers \"%s\".\r\n\r\n"
+						"Unable to connect to remote speakers \"%s\".\n"
 						"Error code: %i", deviceInfo.name(), returnCode));
-					MessageDialog(message, MB_ICONERROR).doModal();
+					std::cerr << message << std::endl;
 
 					throw std::runtime_error(message);
 				}
@@ -496,7 +558,7 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				const std::string message(Poco::format(
 					"Audio jack on remote speakers \"%s\" is not connected.",
 					deviceInfo.name()));
-				MessageDialog(message).doModal();
+				std::cerr << message << std::endl;
 			}
 
 			if (deviceInfo.type() == DeviceInfo::AVR) device->getVolume();

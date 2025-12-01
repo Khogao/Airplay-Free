@@ -18,6 +18,7 @@
 #include "DeviceDiscovery.h"
 #include "ServiceDiscovery.h"
 #include "Uncopyable.h"
+#include <stdexcept>
 #include <cassert>
 #include <exception>
 #include <map>
@@ -539,7 +540,7 @@ DeviceInfo::DeviceType DeviceDiscoveryImpl::determineDeviceType(
 		// AirServer
 
 		if (txtRecord.has("am") && txtRecord.test("am", "Air[Pp]ort.*"))
-			throw std::exception("Ignoring redundant AirServer service");
+			throw std::runtime_error("Ignoring redundant AirServer service");
 
 		assert( txtRecord.has("am") && txtRecord.test("am", "AppleTV[23],[12]"));
 		assert( txtRecord.has("da") && txtRecord.get("da") == "true");
@@ -574,7 +575,7 @@ DeviceInfo::DeviceType DeviceDiscoveryImpl::determineDeviceType(
 		// X-Mirage (or AirReceiver)
 
 		if (txtRecord.has("am") && txtRecord.test("am", "AirPort.*"))
-			throw std::exception("Ignoring redundant X-Mirage service");
+			throw std::runtime_error("Ignoring redundant X-Mirage service");
 
 		if (txtRecord.has("rmodel") && txtRecord.test("rmodel", "(?!AirRecei?ver).*"))
 			assert(txtRecord.has("rhd") && txtRecord.test("rhd", "\\d\\.\\d{2}\\.\\d"));
@@ -601,7 +602,7 @@ DeviceInfo::DeviceType DeviceDiscoveryImpl::determineDeviceType(
 	else if (!txtRecord.has("am") && !txtRecord.has("da") && !txtRecord.has("fv")
 		  && !txtRecord.has("md") && !txtRecord.has("tp") && !txtRecord.has("vs"))
 	{
-		throw std::exception("AirPort Express 6.1.1 or 6.2 not supported");
+		throw std::runtime_error("AirPort Express 6.1.1 or 6.2 not supported");
 	}
 	else if ((txtRecord.has("am") && txtRecord.test("am", "AirPort.*") && !txtRecord.has("md"))
 		 || (!txtRecord.has("am") && txtRecord.has("tp") && txtRecord.get("tp") == "TCP,UDP"))

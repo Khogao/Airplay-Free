@@ -20,6 +20,7 @@
 
 #include "Platform.h"
 #include <exception>
+#include <stdexcept>
 #include <string>
 #include <stdio.h>
 
@@ -44,14 +45,14 @@ private:
 	catch (const std::exception& except) {                                     \
 		Debugger::printException(except, __FUNCTION__);                        \
 	} catch (const std::string& string) {                                      \
-		Debugger::printException(std::exception(string.c_str()), __FUNCTION__);\
+		Debugger::printException(std::runtime_error(string.c_str()), __FUNCTION__);\
 	} catch (const char* const cstring) {                                      \
-		Debugger::printException(std::exception(cstring), __FUNCTION__);       \
+		Debugger::printException(std::runtime_error(cstring), __FUNCTION__);       \
 	} catch (const int& integer) {                                             \
-		char chars[64]; ::sprintf_s(chars, "%d (%#.8x)", integer, integer);    \
-		Debugger::printException(std::exception(chars), __FUNCTION__);         \
+		char chars[64]; snprintf(chars, sizeof(chars), "%d (%#.8x)", integer, integer);    \
+		Debugger::printException(std::runtime_error(chars), __FUNCTION__);         \
 	} catch (...) {                                                            \
-		Debugger::printException(std::exception("..."), __FUNCTION__);         \
+		Debugger::printException(std::runtime_error("..."), __FUNCTION__);         \
 	}
 
 

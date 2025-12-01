@@ -57,7 +57,7 @@ class DeviceDialogImpl
 
 	void checkOkayButton();
 
-	std::auto_ptr<const DeviceInfo> _device;
+	std::unique_ptr<const DeviceInfo> _device;
 };
 
 

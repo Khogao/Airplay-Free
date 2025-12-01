@@ -20,6 +20,8 @@
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
+#include <thread>
+#include <chrono>
 
 
 static const size_t BUFFER_CAPACITY = 32 * 1024;
@@ -132,7 +134,7 @@ repeat:
 		if (canWrite == 0)
 		{
 			if (sleeps++ > 11) return;
-			Sleep(1); goto repeat;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1)); goto repeat;
 		}
 		sleeps = 0;
 

@@ -19,10 +19,14 @@
 
 
 // tag used on exported classes and functions
-#if defined(RSOUTPUT_EXPORTS)
-#	define RSOUTPUT_API __declspec(dllexport)
+#if defined(_WIN32)
+    #if defined(RSOUTPUT_EXPORTS)
+    #	define RSOUTPUT_API __declspec(dllexport)
+    #else
+    #	define RSOUTPUT_API __declspec(dllimport)
+    #endif
 #else
-#	define RSOUTPUT_API __declspec(dllimport)
+    #define RSOUTPUT_API
 #endif
 
 
@@ -31,11 +35,40 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#ifdef _WIN32
 #include <tchar.h>
 #include <windows.h>
-
+#else
+#include <cstdint>
+typedef int8_t INT8;
+typedef uint8_t UINT8;
+typedef int16_t INT16;
+typedef uint16_t UINT16;
+typedef int32_t INT32;
+typedef uint32_t UINT32;
+typedef int64_t INT64;
+typedef uint64_t UINT64;
+typedef uint8_t byte_t;
+typedef char TCHAR;
+typedef char char_t;
+typedef void* HWND;
+typedef int BOOL;
+typedef long LONG;
+typedef struct tagRECT {
+  LONG left;
+  LONG top;
+  LONG right;
+  LONG bottom;
+} RECT;
+#define TEXT(quote) quote
+#define MAKELONG(a, b) ((LONG)(((uint16_t)(((uintptr_t)(a)) & 0xffff)) | ((uint32_t)((uint16_t)(((uintptr_t)(b)) & 0xffff))) << 16))
+#define LOWORD(l) ((uint16_t)(((uintptr_t)(l)) & 0xffff))
+#define HIWORD(l) ((uint16_t)((((uintptr_t)(l)) >> 16) & 0xffff))
+#endif
 
 // int types
+#ifdef _WIN32
 typedef INT8 int8_t;
 typedef UINT8 uint8_t;
 typedef INT16 int16_t;
@@ -44,12 +77,15 @@ typedef INT32 int32_t;
 typedef UINT32 uint32_t;
 typedef INT64 int64_t;
 typedef UINT64 uint64_t;
+#endif
 
 // more types
 using std::size_t;
 using std::time_t;
+#ifdef _WIN32
 typedef UINT8 byte_t;
 typedef TCHAR char_t;
+#endif
 typedef std::vector<byte_t> buffer_t;
 typedef std::pair<short,short> shorts_t;
 typedef std::basic_string<TCHAR> string_t;
@@ -69,7 +105,11 @@ namespace Platform {
 
 	namespace Error {
 		extern std::string describe(int errorCode /* from [WSA]GetLastError */);
+#ifdef _WIN32
 		inline std::string describeLast() { return describe(::GetLastError()); }
+#else
+        inline std::string describeLast() { return "Unknown Error"; }
+#endif
 	}
 
 } // namespace Platform

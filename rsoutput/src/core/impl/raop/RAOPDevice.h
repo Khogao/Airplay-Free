@@ -72,7 +72,7 @@ public:
 
 private:
 	              class RAOPEngine& _raopEngine;
-	std::auto_ptr<class RTSPClient> _rtspClient;
+	std::unique_ptr<class RTSPClient> _rtspClient;
 
 	volatile float _deviceVolume;
 

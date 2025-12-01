@@ -19,7 +19,11 @@
 
 
 #include <string>
+#if defined(_WIN32) && !defined(__linux__)
 #include <windows.h>
+#else
+typedef void* HWND;
+#endif
 
 
 class Player

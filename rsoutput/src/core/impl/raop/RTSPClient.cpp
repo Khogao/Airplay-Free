@@ -884,9 +884,9 @@ std::string RTSPClientImpl::receiveResponse()
 	while (lastFour != 0x0D0A0D0A); // read until "\r\n\r\n"
 
 	// read response body if content length is provided
-	std::tr1::match_results<std::vector<char>::iterator> mr;
-	if (std::tr1::regex_search(responseBuffer.begin(), responseBuffer.end(),
-							   mr, std::tr1::regex("\\bContent-Length:\\s*(\\d+)\r\n")))
+	std::smatch<std::vector<char>::iterator> mr;
+	if (std::regex_search(responseBuffer.begin(), responseBuffer.end(),
+							   mr, std::regex("\\bContent-Length:\\s*(\\d+)\r\n")))
 	{
 		const size_t contentLength = NumberParser::parseDecimalIntegerTo<size_t>(mr[1]);
 

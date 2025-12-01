@@ -93,7 +93,7 @@ private:
 
 private:
 	/** RSA encryption public key */
-	std::tr1::shared_ptr<RSA> _rsaKey;
+	std::shared_ptr<RSA> _rsaKey;
 	RSA* rsaKey() { return _rsaKey.get(); }
 
 	/** AES encryption key (binary and base64-encoded) */
@@ -145,7 +145,7 @@ private:
 
 	OutputObserver& _outputObserver;
 
-	std::auto_ptr<class ALACEncoder> _alacEncoder;
+	std::unique_ptr<class ALACEncoder> _alacEncoder;
 
 	typedef std::list<class RAOPDevice*> RAOPDeviceList;
 	RAOPDeviceList _raopDevices;

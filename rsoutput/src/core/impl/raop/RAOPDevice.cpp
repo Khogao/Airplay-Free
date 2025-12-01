@@ -204,7 +204,7 @@ void RAOPDevice::close()
 	_audioSocketAddr = _controlSocketAddr = _timingSocketAddr = SocketAddress();
 
 	// ensure RTSP client is destroyed even if detach or teardown throw
-	std::auto_ptr<RTSPClient> rtspClient(_rtspClient);
+	std::unique_ptr<RTSPClient> rtspClient(std::move(_rtspClient));
 
 	_raopEngine.detach(this);
 

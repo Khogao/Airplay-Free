@@ -26,6 +26,7 @@
 #include "RemoteControl.h"
 #include <cassert>
 #include <exception>
+#include <stdexcept>
 #include <memory>
 #include <utility>
 #include <Poco/Runnable.h>
@@ -66,7 +67,7 @@ private:
 
 	Player& _player;
 	DeviceManager _deviceManager;
-	std::auto_ptr<RemoteControl> _remoteControl;
+	std::unique_ptr<RemoteControl> _remoteControl;
 
 	volatile bool _stopThread;
 	Thread _thread;
@@ -114,7 +115,7 @@ void OutputComponent::open(const OutputFormat& format, const OutputMetadata& met
 	}
 	else
 	{
-		throw std::exception("deviceManager.openDevices failed");
+		throw std::runtime_error("deviceManager.openDevices failed");
 	}
 }
 

@@ -33,8 +33,8 @@ public:
 		std::string display_name;
 		bool activated; bool available;
 	};
-	typedef std::vector<const Info> InfoList;
-	typedef std::tr1::shared_ptr<InfoList> InfoListPtr;
+	typedef std::vector<Info> InfoList;
+	typedef std::shared_ptr<InfoList> InfoListPtr;
 
 public:
 	DeviceUtils();

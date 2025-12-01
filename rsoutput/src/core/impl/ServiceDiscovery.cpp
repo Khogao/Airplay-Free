@@ -827,5 +827,5 @@ void ServiceDiscovery::TXTRecord::put(const std::string& key, const std::string&
 
 bool ServiceDiscovery::TXTRecord::test(const std::string& key, const std::string& regex) const
 {
-	return std::tr1::regex_match(get(key), std::tr1::regex(regex));
+	return std::regex_match(get(key), std::regex(regex));
 }

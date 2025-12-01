@@ -30,7 +30,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#if defined(_WIN32)
 #include <mswsock.h>
+#endif
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
@@ -39,15 +41,17 @@
 #include <Poco/Net/IPAddress.h>
 
 
-#define TARGET_OS_WIN32
+//#define TARGET_OS_WIN32
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4146)
 #pragma warning(disable:4244)
 #pragma warning(disable:4805)
-#include <ag_dec.c>
-#include <ag_enc.c>
-#include <dp_enc.c>
-#include <matrix_enc.c>
+#endif
+#include "ag_dec.c"
+#include "ag_enc.c"
+#include "dp_enc.c"
+#include "matrix_enc.c"
 #include <ALACBitUtilities.c>
 #include <EndianPortable.c>
 #include <ALACEncoder.cpp>
@@ -522,7 +526,7 @@ void RAOPEngine::write(const byte_t* buffer, size_t length)
 	byte_t* const securedPacketPtr = &sslotRef.packetData[RTP_DATA_HEADER_SIZE];
 	byte_t* const unsecuredPacketPtr = &uslotRef.packetData[RTP_DATA_HEADER_SIZE];
 
-	std::tr1::shared_ptr<void> buf;
+	std::shared_ptr<void> buf;
 	if (length < RAOP_PACKET_MAX_DATA_SIZE)
 	{
 		Debugger::printf("Recovering from %i-byte audio segment by padding it with %i bytes (%.3f ms) of silence.",

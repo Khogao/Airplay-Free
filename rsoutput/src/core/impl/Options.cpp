@@ -28,6 +28,26 @@
 #include <openssl/evp.h>
 #include <Poco/Format.h>
 #include <Poco/NotificationCenter.h>
+
+#ifndef _WIN32
+#include <cstring>
+static int GetPrivateProfileIntA(const char* appName, const char* keyName, int defaultVal, const char* fileName) {
+    return defaultVal;
+}
+static int GetPrivateProfileStringA(const char* appName, const char* keyName, const char* defaultVal, char* returnedString, int size, const char* fileName) {
+    if (defaultVal) {
+        strncpy(returnedString, defaultVal, size);
+        return strlen(defaultVal);
+    }
+    return 0;
+}
+static bool WritePrivateProfileSectionA(const char* appName, const char* string, const char* fileName) {
+    return true;
+}
+static bool WritePrivateProfileStringA(const char* appName, const char* keyName, const char* string, const char* fileName) {
+    return true;
+}
+#endif
 #include <Poco/SingletonHolder.h>
 
 
@@ -212,7 +232,7 @@ const std::string& Options::getPassword(const std::string& deviceName) const
 {
 	static const std::string emptyPassword;
 
-	std::map<const std::string,const std::pair<const std::string,bool>>::const_iterator pos =
+	auto pos =
 		_devicePasswords.find(deviceName);
 	return (pos != _devicePasswords.end() ? pos->second.first : emptyPassword);
 }
@@ -220,7 +240,7 @@ const std::string& Options::getPassword(const std::string& deviceName) const
 
 bool Options::getRememberPassword(const std::string& deviceName) const
 {
-	std::map<const std::string,const std::pair<const std::string,bool>>::const_iterator pos =
+	auto pos =
 		_devicePasswords.find(deviceName);
 	return (pos != _devicePasswords.end() ? pos->second.second : false);
 }

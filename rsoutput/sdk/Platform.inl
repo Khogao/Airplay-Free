@@ -20,125 +20,152 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#ifndef _WIN32
+#include <cstring>
+#include <locale>
+#include <codecvt>
+#endif
 
 
 inline void Platform::Charset::fromUTF8(const std::string& src, std::string& dst)
 {
-	// transcode string from UTF-8 to UTF-16
-	std::wstring uString; fromUTF8(src, uString);
+#ifdef _WIN32
+// transcode string from UTF-8 to UTF-16
+std::wstring uString; fromUTF8(src, uString);
 
-	const int length = ::WideCharToMultiByte(
-		CP_ACP, 0, uString.c_str(), -1, NULL, 0, NULL, NULL);
-	if (length <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"WideCharToMultiByte failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+const int length = ::WideCharToMultiByte(
+CP_ACP, 0, uString.c_str(), -1, NULL, 0, NULL, NULL);
+if (length <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"WideCharToMultiByte failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	std::vector<char> chars(length);
+std::vector<char> chars(length);
 
-	const int result = ::WideCharToMultiByte(
-		CP_ACP, 0, uString.c_str(), -1, &chars[0], length, NULL, NULL);
-	if (result <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"WideCharToMultiByte failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+const int result = ::WideCharToMultiByte(
+CP_ACP, 0, uString.c_str(), -1, &chars[0], length, NULL, NULL);
+if (result <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"WideCharToMultiByte failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	dst = &chars[0];
+dst = &chars[0];
+#else
+    dst = src;
+#endif
 }
 
 
 inline void Platform::Charset::fromUTF8(const std::string& src, std::wstring& dst)
 {
-	const int length = ::MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, NULL, 0);
-	if (length <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"MultiByteToWideChar failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+#ifdef _WIN32
+const int length = ::MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, NULL, 0);
+if (length <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"MultiByteToWideChar failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	std::vector<wchar_t> wchars(length);
+std::vector<wchar_t> wchars(length);
 
-	const int result = ::MultiByteToWideChar(
-		CP_UTF8, 0, src.c_str(), -1, &wchars[0], length);
-	if (result <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"MultiByteToWideChar failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+const int result = ::MultiByteToWideChar(
+CP_UTF8, 0, src.c_str(), -1, &wchars[0], length);
+if (result <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"MultiByteToWideChar failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	dst = &wchars[0];
+dst = &wchars[0];
+#else
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    dst = converter.from_bytes(src);
+#endif
 }
 
 
 inline void Platform::Charset::toUTF8(const std::string& src, std::string& dst)
 {
-	const int length = ::MultiByteToWideChar(CP_ACP, 0, src.c_str(), -1, NULL, 0);
-	if (length <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"MultiByteToWideChar failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+#ifdef _WIN32
+const int length = ::MultiByteToWideChar(CP_ACP, 0, src.c_str(), -1, NULL, 0);
+if (length <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"MultiByteToWideChar failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	std::vector<wchar_t> wchars(length);
+std::vector<wchar_t> wchars(length);
 
-	const int result = ::MultiByteToWideChar(
-		CP_ACP, 0, src.c_str(), -1, &wchars[0], length);
-	if (result <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"MultiByteToWideChar failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+const int result = ::MultiByteToWideChar(
+CP_ACP, 0, src.c_str(), -1, &wchars[0], length);
+if (result <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"MultiByteToWideChar failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	// transcode string from UTF-16 to UTF-8
-	toUTF8(&wchars[0], dst);
+// transcode string from UTF-16 to UTF-8
+toUTF8(&wchars[0], dst);
+#else
+    dst = src;
+#endif
 }
 
 
 inline void Platform::Charset::toUTF8(const std::wstring& src, std::string& dst)
 {
-	const int length = ::WideCharToMultiByte(
-		CP_UTF8, 0, src.c_str(), -1, NULL, 0, NULL, NULL);
-	if (length <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"WideCharToMultiByte failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+#ifdef _WIN32
+const int length = ::WideCharToMultiByte(
+CP_UTF8, 0, src.c_str(), -1, NULL, 0, NULL, NULL);
+if (length <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"WideCharToMultiByte failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	std::vector<char> chars(length);
+std::vector<char> chars(length);
 
-	const int result = ::WideCharToMultiByte(
-		CP_UTF8, 0, src.c_str(), -1, &chars[0], chars.size(), NULL, NULL);
-	if (result <= 0) {
-		char message[100]; ::sprintf_s(message, sizeof(message),
-			"WideCharToMultiByte failed with error code %lu", ::GetLastError());
-		throw std::runtime_error(message);
-	}
+const int result = ::WideCharToMultiByte(
+CP_UTF8, 0, src.c_str(), -1, &chars[0], chars.size(), NULL, NULL);
+if (result <= 0) {
+char message[100]; ::sprintf_s(message, sizeof(message),
+"WideCharToMultiByte failed with error code %lu", ::GetLastError());
+throw std::runtime_error(message);
+}
 
-	dst = &chars[0];
+dst = &chars[0];
+#else
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    dst = converter.to_bytes(src);
+#endif
 }
 
 
 inline std::string Platform::Error::describe(const int errorCode)
 {
-	std::string errorDesc;
+std::string errorDesc;
 
-	assert(errorCode > 0); LPSTR string = NULL; DWORD length = ::FormatMessageA(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL, (DWORD) errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &string, 0, NULL);
+#ifdef _WIN32
+assert(errorCode > 0); LPSTR string = NULL; DWORD length = ::FormatMessageA(
+FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+NULL, (DWORD) errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR) &string, 0, NULL);
 
-	if (length > 0)
-	{
-		// capture string then free platform-allocated buffer
-		std::string str(string, length); ::LocalFree(string);
+if (length > 0)
+{
+// capture string then free platform-allocated buffer
+std::string str(string, length); ::LocalFree(string);
 
-		// strip trailing punctuation and whitespace characters
-		const std::string::size_type pos = str.find_last_not_of(".! \t\r\n");
-		if (pos != std::string::npos) str.erase(pos + 1);
+// strip trailing punctuation and whitespace characters
+const std::string::size_type pos = str.find_last_not_of(".! \t\r\n");
+if (pos != std::string::npos) str.erase(pos + 1);
 
-		Platform::Charset::toUTF8(str, errorDesc);
-	}
+Platform::Charset::toUTF8(str, errorDesc);
+}
+#else
+    errorDesc = std::string(strerror(errorCode));
+#endif
 
-	return errorDesc;
+return errorDesc;
 }

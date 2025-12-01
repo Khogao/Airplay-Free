@@ -31,7 +31,7 @@ public:
 		friend class ServiceDiscoveryImpl;
 
 	public:
-		const TXTRecord(const void* buf, uint16_t len);
+		TXTRecord(const void* buf, uint16_t len);
 		TXTRecord();
 		~TXTRecord();
 

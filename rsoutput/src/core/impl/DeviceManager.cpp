@@ -164,8 +164,11 @@ void DeviceManager::openDevices()
 	for (DeviceInfoSet::const_iterator it = discovered.begin();
 		it != discovered.end(); ++it)
 	{
-		anyDeviceActivated = true;
-		openDevice(*it);
+		if (options->isActivated(it->name()))
+		{
+			anyDeviceActivated = true;
+			openDevice(*it);
+		}
 	}
 
 	if (!anyDeviceActivated)

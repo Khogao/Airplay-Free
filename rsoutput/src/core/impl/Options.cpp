@@ -31,40 +31,46 @@
 
 #ifndef _WIN32
 #include <cstring>
-static int GetPrivateProfileIntA(const char* appName, const char* keyName, int defaultVal, const char* fileName) {
-    return defaultVal;
+static int GetPrivateProfileIntA(const char *appName, const char *keyName, int defaultVal, const char *fileName)
+{
+	return defaultVal;
 }
-static int GetPrivateProfileStringA(const char* appName, const char* keyName, const char* defaultVal, char* returnedString, int size, const char* fileName) {
-    if (defaultVal) {
-        strncpy(returnedString, defaultVal, size);
-        return strlen(defaultVal);
-    }
-    return 0;
+static int GetPrivateProfileStringA(const char *appName, const char *keyName, const char *defaultVal, char *returnedString, int size, const char *fileName)
+{
+	if (defaultVal)
+	{
+		strncpy(returnedString, defaultVal, size);
+		return strlen(defaultVal);
+	}
+	return 0;
 }
-static bool WritePrivateProfileSectionA(const char* appName, const char* string, const char* fileName) {
-    return true;
+static bool WritePrivateProfileSectionA(const char *appName, const char *string, const char *fileName)
+{
+	return true;
 }
-static bool WritePrivateProfileStringA(const char* appName, const char* keyName, const char* string, const char* fileName) {
-    return true;
+static bool WritePrivateProfileStringA(const char *appName, const char *keyName, const char *string, const char *fileName)
+{
+	return true;
 }
 #endif
 #include <Poco/SingletonHolder.h>
-
 
 using Poco::AbstractObserver;
 using Poco::Notification;
 using Poco::NotificationCenter;
 using Poco::SingletonHolder;
 
-
 static Options::SharedPtr theOptions;
 
+Options::Options()
+	: _volumeControl(true), _playerControl(true), _resetOnPause(true)
+{
+}
 
 Options::SharedPtr Options::getOptions()
 {
 	return theOptions;
 }
-
 
 void Options::setOptions(Options::SharedPtr newOptions)
 {
@@ -81,23 +87,21 @@ void Options::setOptions(Options::SharedPtr newOptions)
 	if (!oldOptions.isNull())
 	{
 		for (DeviceInfoSet::const_iterator it = oldOptions->devices().begin();
-			it != oldOptions->devices().end(); ++it)
+			 it != oldOptions->devices().end(); ++it)
 		{
-			const DeviceInfo& oldDeviceInfo = *it;
+			const DeviceInfo &oldDeviceInfo = *it;
 
 			DeviceInfoSet::const_iterator pos = newOptions->devices().find(oldDeviceInfo);
 			if (pos != newOptions->devices().end())
 			{
-				const DeviceInfo& newDeviceInfo = *pos;
+				const DeviceInfo &newDeviceInfo = *pos;
 
-				if (!oldOptions->isActivated(oldDeviceInfo.name())
-					&& newOptions->isActivated(newDeviceInfo.name()))
+				if (!oldOptions->isActivated(oldDeviceInfo.name()) && newOptions->isActivated(newDeviceInfo.name()))
 				{
 					postNotification(new DeviceNotification(
 						DeviceNotification::ACTIVATE, newDeviceInfo));
 				}
-				else if (oldOptions->isActivated(oldDeviceInfo.name())
-					&& !newOptions->isActivated(newDeviceInfo.name()))
+				else if (oldOptions->isActivated(oldDeviceInfo.name()) && !newOptions->isActivated(newDeviceInfo.name()))
 				{
 					postNotification(new DeviceNotification(
 						DeviceNotification::DEACTIVATE, newDeviceInfo));
@@ -115,9 +119,9 @@ void Options::setOptions(Options::SharedPtr newOptions)
 	}
 
 	for (DeviceInfoSet::const_iterator it = newOptions->devices().begin();
-		it != newOptions->devices().end(); ++it)
+		 it != newOptions->devices().end(); ++it)
 	{
-		const DeviceInfo& newDeviceInfo = *it;
+		const DeviceInfo &newDeviceInfo = *it;
 
 		if (oldOptions.isNull() || oldOptions->devices().count(newDeviceInfo) == 0)
 		{
@@ -133,102 +137,71 @@ void Options::setOptions(Options::SharedPtr newOptions)
 	}
 }
 
-
 static SingletonHolder<NotificationCenter> notificationCenter;
 
-
-void Options::addObserver(const AbstractObserver& observer)
+void Options::addObserver(const AbstractObserver &observer)
 {
-	NotificationCenter& nc = *(notificationCenter.get());
+	NotificationCenter &nc = *(notificationCenter.get());
 	nc.addObserver(observer);
 }
 
-
-void Options::removeObserver(const AbstractObserver& observer)
+void Options::removeObserver(const AbstractObserver &observer)
 {
-	NotificationCenter& nc = *(notificationCenter.get());
+	NotificationCenter &nc = *(notificationCenter.get());
 	nc.removeObserver(observer);
 }
 
-
 void Options::postNotification(Notification::Ptr notification)
 {
-	NotificationCenter& nc = *(notificationCenter.get());
+	NotificationCenter &nc = *(notificationCenter.get());
 	nc.postNotification(notification);
 }
 
-
 //------------------------------------------------------------------------------
-
 
 bool Options::getVolumeControl() const
 {
 	return _volumeControl;
 }
 
-
 void Options::setVolumeControl(const bool state)
 {
 	_volumeControl = state;
 }
-
 
 bool Options::getPlayerControl() const
 {
 	return _playerControl;
 }
 
-
 void Options::setPlayerControl(const bool state)
 {
 	_playerControl = state;
 }
-
 
 bool Options::getResetOnPause() const
 {
 	return _resetOnPause;
 }
 
-
 void Options::setResetOnPause(const bool state)
 {
 	_resetOnPause = state;
 }
 
-
-const DeviceInfoSet& Options::devices() const
+const DeviceInfoSet &Options::devices() const
 {
 	return _devices;
 }
 
-
-DeviceInfoSet& Options::devices()
+DeviceInfoSet &Options::devices()
 {
 	return _devices;
 }
 
+// Activation functions removed - now inline in header, always return true
 
-bool Options::isActivated(const std::string& deviceName) const
-{
-	return (_activatedDevices.count(deviceName) != 0);
-}
-
-
-void Options::setActivated(const std::string& deviceName, const bool activate)
-{
-	if (activate)
-	{
-		_activatedDevices.insert(deviceName);
-	}
-	else
-	{
-		_activatedDevices.erase(deviceName);
-	}
-}
-
-
-const std::string& Options::getPassword(const std::string& deviceName) const
+const std::string &Options::getPassword(const std::string &deviceName) const
 {
 	static const std::string emptyPassword;
 
@@ -237,35 +210,30 @@ const std::string& Options::getPassword(const std::string& deviceName) const
 	return (pos != _devicePasswords.end() ? pos->second.first : emptyPassword);
 }
 
-
-bool Options::getRememberPassword(const std::string& deviceName) const
+bool Options::getRememberPassword(const std::string &deviceName) const
 {
 	auto pos =
 		_devicePasswords.find(deviceName);
 	return (pos != _devicePasswords.end() ? pos->second.second : false);
 }
 
-
-void Options::setPassword(const std::string& deviceName,
-	const std::string& password, const bool rememberPassword)
+void Options::setPassword(const std::string &deviceName,
+						  const std::string &password, const bool rememberPassword)
 {
 	_devicePasswords.insert(std::make_pair(deviceName, std::make_pair(password, rememberPassword)));
 }
 
-
-void Options::clearPassword(const std::string& deviceName)
+void Options::clearPassword(const std::string &deviceName)
 {
 	_devicePasswords.erase(deviceName);
 }
 
-
 //------------------------------------------------------------------------------
 
-
-static bool compare(const DeviceInfoSet& lhs, const DeviceInfoSet& rhs)
+static bool compare(const DeviceInfoSet &lhs, const DeviceInfoSet &rhs)
 {
 	typedef DeviceInfoSet::const_iterator iterator_t;
-	using std::rel_ops::operator !=;
+	using std::rel_ops::operator!=;
 
 	for (iterator_t left = lhs.begin(); left != lhs.end(); ++left)
 	{
@@ -290,18 +258,10 @@ static bool compare(const DeviceInfoSet& lhs, const DeviceInfoSet& rhs)
 	return true;
 }
 
-
-bool operator ==(const Options& lhs, const Options& rhs)
+bool operator==(const Options &lhs, const Options &rhs)
 {
-	if (lhs.getVolumeControl() != rhs.getVolumeControl()
-		|| lhs.getPlayerControl() != rhs.getPlayerControl()
-		|| lhs.getResetOnPause() != rhs.getResetOnPause()
-		|| lhs._activatedDevices.size() != rhs._activatedDevices.size()
-		|| !std::equal(lhs._activatedDevices.begin(), lhs._activatedDevices.end(),
-				rhs._activatedDevices.begin())
-		|| lhs._devicePasswords.size() != rhs._devicePasswords.size()
-		|| !std::equal(lhs._devicePasswords.begin(), lhs._devicePasswords.end(),
-				rhs._devicePasswords.begin()))
+	// Removed _activatedDevices comparison - activation check disabled
+	if (lhs.getVolumeControl() != rhs.getVolumeControl() || lhs.getPlayerControl() != rhs.getPlayerControl() || lhs.getResetOnPause() != rhs.getResetOnPause() || lhs._devicePasswords.size() != rhs._devicePasswords.size() || !std::equal(lhs._devicePasswords.begin(), lhs._devicePasswords.end(), rhs._devicePasswords.begin()))
 	{
 		return false;
 	}
@@ -314,11 +274,9 @@ bool operator ==(const Options& lhs, const Options& rhs)
 	return true;
 }
 
-
 //------------------------------------------------------------------------------
 
-
-void OptionsUtils::loadOptions(const std::string& iniFilePath)
+void OptionsUtils::loadOptions(const std::string &iniFilePath)
 {
 	Debugger::printf("Reading plug-in options from '%s'...", iniFilePath.c_str());
 
@@ -326,21 +284,21 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 
 	// read volume control flag
 	options->setVolumeControl(0 != GetPrivateProfileIntA(
-		Plugin::name().c_str(), "VolumeControl", 1, iniFilePath.c_str()));
+									   Plugin::name().c_str(), "VolumeControl", 1, iniFilePath.c_str()));
 	Debugger::printf(
-		"Read 'VolumeControl' value '%i'.", (int) options->getVolumeControl());
+		"Read 'VolumeControl' value '%i'.", (int)options->getVolumeControl());
 
 	// read player control flag
 	options->setPlayerControl(0 != GetPrivateProfileIntA(
-		Plugin::name().c_str(), "PlayerControl", 1, iniFilePath.c_str()));
+									   Plugin::name().c_str(), "PlayerControl", 1, iniFilePath.c_str()));
 	Debugger::printf(
-		"Read 'PlayerControl' value '%i'.", (int) options->getPlayerControl());
+		"Read 'PlayerControl' value '%i'.", (int)options->getPlayerControl());
 
 	// read reset on pause flag
 	options->setResetOnPause(0 != GetPrivateProfileIntA(
-		Plugin::name().c_str(), "ResetOnPause", 1, iniFilePath.c_str()));
+									  Plugin::name().c_str(), "ResetOnPause", 1, iniFilePath.c_str()));
 	Debugger::printf(
-		"Read 'ResetOnPause' value '%i'.", (int) options->getResetOnPause());
+		"Read 'ResetOnPause' value '%i'.", (int)options->getResetOnPause());
 
 	int parameterValueLength;
 	char parameterValue[128];
@@ -349,7 +307,7 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 	{
 		// read device type integer
 		const unsigned int type = GetPrivateProfileIntA(Plugin::name().c_str(),
-			Poco::format("Device%i_Type", index).c_str(), 0, iniFilePath.c_str());
+														Poco::format("Device%i_Type", index).c_str(), 0, iniFilePath.c_str());
 		switch (type)
 		{
 		case DeviceInfo::APX:
@@ -360,14 +318,15 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 		case DeviceInfo::AS4:
 			break;
 		default:
-			if (LOWORD(type) != DeviceInfo::ANY) continue;
+			if (LOWORD(type) != DeviceInfo::ANY)
+				continue;
 		}
 		Debugger::printf("Read 'Device%i_Type' value '%u'.", index, type);
 
 		// read device name string
 		parameterValueLength = GetPrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Name", index).c_str(), NULL, parameterValue,
-			sizeof(parameterValue), iniFilePath.c_str());
+														Poco::format("Device%i_Name", index).c_str(), NULL, parameterValue,
+														sizeof(parameterValue), iniFilePath.c_str());
 		if (parameterValueLength <= 0)
 		{
 			continue;
@@ -377,8 +336,8 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 
 		// read device address strings
 		parameterValueLength = GetPrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Address1", index).c_str(), NULL, parameterValue,
-			sizeof(parameterValue), iniFilePath.c_str());
+														Poco::format("Device%i_Address1", index).c_str(), NULL, parameterValue,
+														sizeof(parameterValue), iniFilePath.c_str());
 		if (parameterValueLength <= 0)
 		{
 			continue;
@@ -387,8 +346,8 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 		Debugger::printf("Read 'Device%i_Address1' value '%s'.", index, addr1.c_str());
 
 		parameterValueLength = GetPrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Address2", index).c_str(), NULL, parameterValue,
-			sizeof(parameterValue), iniFilePath.c_str());
+														Poco::format("Device%i_Address2", index).c_str(), NULL, parameterValue,
+														sizeof(parameterValue), iniFilePath.c_str());
 		if (parameterValueLength <= 0)
 		{
 			continue;
@@ -398,9 +357,9 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 
 		// read device zero-configuration flag
 		const bool zeroConf = (0 != GetPrivateProfileIntA(Plugin::name().c_str(),
-			Poco::format("Device%i_ZeroConf", index).c_str(), 0, iniFilePath.c_str()));
+														  Poco::format("Device%i_ZeroConf", index).c_str(), 0, iniFilePath.c_str()));
 		Debugger::printf(
-			"Read 'Device%i_ZeroConf' value '%i'.", index, (int) zeroConf);
+			"Read 'Device%i_ZeroConf' value '%i'.", index, (int)zeroConf);
 
 		// create device info from parameters read so far
 		const DeviceInfo device(
@@ -408,17 +367,12 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 
 		options->devices().insert(device);
 
-		// read device activated flag
-		options->setActivated(device.name(), (0 != GetPrivateProfileIntA(
-			Plugin::name().c_str(), Poco::format("Device%i_Activated", index).c_str(),
-			0, iniFilePath.c_str())));
-		Debugger::printf(
-			"Read 'Device%i_Activated' value '%i'.", index, options->isActivated(device.name()));
+		// Activation check removed - all devices are automatically activated
 
 		// read device password string
 		parameterValueLength = GetPrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Password", index).c_str(), NULL,
-			parameterValue, sizeof(parameterValue), iniFilePath.c_str());
+														Poco::format("Device%i_Password", index).c_str(), NULL,
+														parameterValue, sizeof(parameterValue), iniFilePath.c_str());
 		if (parameterValueLength <= 0)
 		{
 			continue;
@@ -430,11 +384,10 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 
 			// base64 decode password string
 			parameterValueLength = EVP_DecodeBlock(
-				(unsigned char*) parameterValue,
-				(unsigned char*) parameterValue,
+				(unsigned char *)parameterValue,
+				(unsigned char *)parameterValue,
 				parameterValueLength);
-			if (parameterValueLength <= 0
-				|| parameterValueLength >= (int) sizeof(parameterValue))
+			if (parameterValueLength <= 0 || parameterValueLength >= (int)sizeof(parameterValue))
 			{
 				throw std::runtime_error("EVP_DecodeBlock failed");
 			}
@@ -451,8 +404,7 @@ void OptionsUtils::loadOptions(const std::string& iniFilePath)
 	Debugger::printf("Read plug-in options from '%s'.", iniFilePath.c_str());
 }
 
-
-void OptionsUtils::saveOptions(const std::string& iniFilePath)
+void OptionsUtils::saveOptions(const std::string &iniFilePath)
 {
 	Debugger::printf("Writing plug-in options to '%s'...", iniFilePath.c_str());
 
@@ -460,37 +412,37 @@ void OptionsUtils::saveOptions(const std::string& iniFilePath)
 	if (!WritePrivateProfileSectionA(Plugin::name().c_str(), "", iniFilePath.c_str()))
 	{
 		Debugger::printf("Clearing old plug-in options failed with error '%s'.",
-			Platform::Error::describeLast().c_str());
+						 Platform::Error::describeLast().c_str());
 	}
 
 	const Options::SharedPtr options = Options::getOptions();
 
 	// write volume control flag
 	WritePrivateProfileStringA(Plugin::name().c_str(), "VolumeControl",
-		Poco::format("%b", options->getVolumeControl()).c_str(),
-		iniFilePath.c_str());
+							   Poco::format("%b", options->getVolumeControl()).c_str(),
+							   iniFilePath.c_str());
 	Debugger::printf(
-		"Wrote 'VolumeControl' value '%i'.", (int) options->getVolumeControl());
+		"Wrote 'VolumeControl' value '%i'.", (int)options->getVolumeControl());
 
 	// write player control flag
 	WritePrivateProfileStringA(Plugin::name().c_str(), "PlayerControl",
-		Poco::format("%b", options->getPlayerControl()).c_str(),
-		iniFilePath.c_str());
+							   Poco::format("%b", options->getPlayerControl()).c_str(),
+							   iniFilePath.c_str());
 	Debugger::printf(
-		"Wrote 'PlayerControl' value '%i'.", (int) options->getPlayerControl());
+		"Wrote 'PlayerControl' value '%i'.", (int)options->getPlayerControl());
 
 	// write reset on pause flag
 	WritePrivateProfileStringA(Plugin::name().c_str(), "ResetOnPause",
-		Poco::format("%b", options->getResetOnPause()).c_str(),
-		iniFilePath.c_str());
+							   Poco::format("%b", options->getResetOnPause()).c_str(),
+							   iniFilePath.c_str());
 	Debugger::printf(
-		"Wrote 'ResetOnPause' value '%i'.", (int) options->getResetOnPause());
+		"Wrote 'ResetOnPause' value '%i'.", (int)options->getResetOnPause());
 
 	int index = 0;
 	for (DeviceInfoSet::const_iterator it = options->devices().begin();
-		it != options->devices().end(); ++it)
+		 it != options->devices().end(); ++it)
 	{
-		const DeviceInfo& device = *it;
+		const DeviceInfo &device = *it;
 
 		if (!options->isActivated(device.name()) && device.isZeroConf())
 		{
@@ -504,50 +456,43 @@ void OptionsUtils::saveOptions(const std::string& iniFilePath)
 
 		// write device type integer
 		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Type", index).c_str(),
-			Poco::format("%u", static_cast<unsigned int>(device.type())).c_str(),
-			iniFilePath.c_str());
+								   Poco::format("Device%i_Type", index).c_str(),
+								   Poco::format("%u", static_cast<unsigned int>(device.type())).c_str(),
+								   iniFilePath.c_str());
 		Debugger::printf(
-			"Wrote 'Device%i_Type' value '%u'.", index, (unsigned int) device.type());
+			"Wrote 'Device%i_Type' value '%u'.", index, (unsigned int)device.type());
 
 		// write device name string
 		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Name", index).c_str(),
-			device.name().c_str(), iniFilePath.c_str());
+								   Poco::format("Device%i_Name", index).c_str(),
+								   device.name().c_str(), iniFilePath.c_str());
 		Debugger::printf(
 			"Wrote 'Device%i_Name' value '%s'.", index, device.name().c_str());
 
 		// write device address strings
 		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Address1", index).c_str(),
-			device.addr().first.c_str(), iniFilePath.c_str());
+								   Poco::format("Device%i_Address1", index).c_str(),
+								   device.addr().first.c_str(), iniFilePath.c_str());
 		Debugger::printf(
 			"Wrote 'Device%i_Address1' value '%s'.", index, device.addr().first.c_str());
 
 		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Address2", index).c_str(),
-			device.addr().second.c_str(), iniFilePath.c_str());
+								   Poco::format("Device%i_Address2", index).c_str(),
+								   device.addr().second.c_str(), iniFilePath.c_str());
 		Debugger::printf(
 			"Wrote 'Device%i_Address2' value '%s'.", index, device.addr().second.c_str());
 
 		// write device zero-configuration flag
 		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_ZeroConf", index).c_str(),
-			Poco::format("%b", device.isZeroConf()).c_str(),
-			iniFilePath.c_str());
+								   Poco::format("Device%i_ZeroConf", index).c_str(),
+								   Poco::format("%b", device.isZeroConf()).c_str(),
+								   iniFilePath.c_str());
 		Debugger::printf(
-			"Wrote 'Device%i_ZeroConf' value '%i'.", index, (int) device.isZeroConf());
+			"Wrote 'Device%i_ZeroConf' value '%i'.", index, (int)device.isZeroConf());
 
-		// write device activated flag
-		WritePrivateProfileStringA(Plugin::name().c_str(),
-			Poco::format("Device%i_Activated", index).c_str(),
-			Poco::format("%b", options->isActivated(device.name())).c_str(),
-			iniFilePath.c_str());
-		Debugger::printf(
-			"Wrote 'Device%i_Activated' value '%i'.", index, (int) options->isActivated(device.name()));
+		// Activation check removed - no need to write Device_Activated flag
 
-		if (!options->getPassword(device.name()).empty()
-			&& options->getRememberPassword(device.name()))
+		if (!options->getPassword(device.name()).empty() && options->getRememberPassword(device.name()))
 		{
 			const std::string password = options->getPassword(device.name());
 			Debugger::printf("Encoding device password '%s'...", password.c_str());
@@ -557,11 +502,10 @@ void OptionsUtils::saveOptions(const std::string& iniFilePath)
 
 			// base64 encode password to obfuscate it
 			parameterValueLength = EVP_EncodeBlock(
-				(unsigned char*) parameterValue,
-				(unsigned char*) password.c_str(),
-				(int) password.length());
-			if (parameterValueLength <= 0
-				|| parameterValueLength >= (int) sizeof(parameterValue))
+				(unsigned char *)parameterValue,
+				(unsigned char *)password.c_str(),
+				(int)password.length());
+			if (parameterValueLength <= 0 || parameterValueLength >= (int)sizeof(parameterValue))
 			{
 				throw std::runtime_error("EVP_EncodeBlock failed");
 			}
@@ -569,8 +513,8 @@ void OptionsUtils::saveOptions(const std::string& iniFilePath)
 
 			// write device password string
 			WritePrivateProfileStringA(Plugin::name().c_str(),
-				Poco::format("Device%i_Password", index).c_str(),
-				parameterValue, iniFilePath.c_str());
+									   Poco::format("Device%i_Password", index).c_str(),
+									   parameterValue, iniFilePath.c_str());
 			Debugger::printf(
 				"Wrote 'Device%i_Password' value '%s'.", index, parameterValue);
 		}

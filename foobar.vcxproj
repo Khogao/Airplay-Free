@@ -5,6 +5,18 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{85FBFD09-0099-4FE9-9DB6-78DB6F60F817}</ProjectGuid>
@@ -13,7 +25,7 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="PropertySheets">
@@ -32,7 +44,7 @@
       <Command>IF EXIST "$(FoobarDir)components\" ERASE /F /Q "$(FoobarDir)components\$(TargetFileName)"</Command>
     </PreBuildEvent>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(WtlDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(ProjectName)\sdk\atl\include;$(ProjectName)\sdk\wtl;$(WtlDir)include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -45,7 +57,35 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>shared.lib;shell32.lib;user32.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared;$(ProjectName)\sdk\atl\lib</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Copying $(TargetFileName) to player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" COPY /B /Y "$(TargetPath)" "$(FoobarDir)components\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PreBuildEvent>
+      <Message>Deleting $(TargetFileName) from player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" ERASE /F /Q "$(FoobarDir)components\$(TargetFileName)"</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(ProjectName)\sdk\atl\include;$(ProjectName)\sdk\wtl;$(WtlDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4652</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shared.lib;shell32.lib;user32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared;$(ProjectName)\sdk\atl\lib</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -65,6 +105,10 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
     </ClCompile>
+    <ClCompile Include="$(ProjectName)\src\MyGuids.cpp" />
+    <ClCompile Include="$(ProjectName)\sdk\foobar2000\SDK\guids.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(ProjectName)\src\FoobarPlayer.h" />
@@ -81,4 +125,63 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PreBuildEvent>
+      <Message>Deleting $(TargetFileName) from player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" ERASE /F /Q "$(FoobarDir)components\$(TargetFileName)"</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(ProjectName)\sdk\atl\include;$(ProjectName)\sdk\wtl;$(WtlDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Disabled</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4652</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shared.lib;shell32.lib;user32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared;$(ProjectName)\sdk\atl\lib</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Copying $(TargetFileName) to player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" COPY /B /Y "$(TargetPath)" "$(FoobarDir)components\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PreBuildEvent>
+      <Message>Deleting $(TargetFileName) from player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" ERASE /F /Q "$(FoobarDir)components\$(TargetFileName)"</Command>
+    </PreBuildEvent>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;rsoutput\sdk;$(ProjectName)\sdk\atl\include;$(ProjectName)\sdk\wtl;$(WtlDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;WIN32;_WIN32_WINNT=0x501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4652</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>shared.lib;shell32.lib;user32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectName)\sdk\foobar2000\shared;$(ProjectName)\sdk\atl\lib</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Copying $(TargetFileName) to player directory...</Message>
+      <Command>IF EXIST "$(FoobarDir)components\" COPY /B /Y "$(TargetPath)" "$(FoobarDir)components\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
 </Project>

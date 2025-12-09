@@ -39,14 +39,12 @@
 #include <Poco/Timespan.h>
 #include <Poco/Net/NetException.h>
 
-
 using Poco::FastMutex;
 using Poco::StringTokenizer;
 using Poco::Timespan;
+using Poco::Net::ConnectionResetException;
 using Poco::Net::Socket;
 using Poco::Net::StreamSocket;
-using Poco::Net::ConnectionResetException;
-
 
 static const std::string ACTIVE_REMOTE_HEADER("Active-Remote");
 static const std::string AUDIO_JACK_STATUS_HEADER("Audio-Jack-Status");
@@ -66,38 +64,41 @@ static const std::string TRANSPORT_HEADER("Transport");
 static const std::string USER_AGENT_HEADER("User-Agent");
 static const std::string WWW_AUTHENTICATE_HEADER("WWW-Authenticate");
 
-
 //------------------------------------------------------------------------------
-
 
 class RTSPRequest
 {
 public:
-	explicit RTSPRequest(const std::string& method) : _method(method) {}
+	explicit RTSPRequest(const std::string &method) : _method(method) {}
 
-	const std::string& method() const { return _method; }
+	const std::string &method() const { return _method; }
 
-	void setBody(const buffer_t& contentData, const std::string& contentType) {
+	void setBody(const buffer_t &contentData, const std::string &contentType)
+	{
 		setHeader(CONTENT_LENGTH_HEADER, Poco::format("%z", contentData.size()));
 		setHeader(CONTENT_TYPE_HEADER, contentType);
 		_bodyData = contentData;
 	}
 
-	void setBody(const std::string& contentData, const std::string& contentType) {
+	void setBody(const std::string &contentData, const std::string &contentType)
+	{
 		setHeader(CONTENT_LENGTH_HEADER, Poco::format("%u", contentData.length()));
 		setHeader(CONTENT_TYPE_HEADER, contentType);
 		_bodyText = contentData;
 	}
 
-	void setHeader(const std::string& name, const std::string& value) {
+	void setHeader(const std::string &name, const std::string &value)
+	{
 		_headers.insert(std::make_pair(name, value));
 	}
 
-	void build(buffer_t& requestData, std::string& requestText, const std::string& requestURI) {
+	void build(buffer_t &requestData, std::string &requestText, const std::string &requestURI)
+	{
 		requestText.assign(Poco::format("%s %s RTSP/1.0\r\n", _method, requestURI));
 
-		typedef std::map<const std::string,const std::string>::const_iterator headers_iterator;
-		for (headers_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		typedef std::map<const std::string, const std::string>::const_iterator headers_iterator;
+		for (headers_iterator it = _headers.begin(); it != _headers.end(); ++it)
+		{
 			requestText.append(it->first + ": " + it->second + "\r\n");
 		}
 
@@ -105,23 +106,29 @@ public:
 
 		requestData.assign(requestText.begin(), requestText.end());
 
-		if (!_bodyData.empty()) {
+		if (!_bodyData.empty())
+		{
 			requestData.insert(requestData.end(), _bodyData.begin(), _bodyData.end());
 
-			struct to_printable {
-				char operator ()(const byte_t b) {
+			struct to_printable
+			{
+				char operator()(const byte_t b)
+				{
 					return (std::isprint(b) || std::isspace(b)) ? b : '*';
 				}
 			};
 
 			// transform short request bodies to printable characters for output
-			if (_bodyData.size() <= 1024) {
+			if (_bodyData.size() <= 1024)
+			{
 				std::transform(_bodyData.begin(), _bodyData.end(),
-					std::back_inserter(requestText), to_printable());
-				if (*(requestText.rbegin()) != '\n') requestText.push_back('\n');
+							   std::back_inserter(requestText), to_printable());
+				if (*(requestText.rbegin()) != '\n')
+					requestText.push_back('\n');
 			}
 		}
-		else if (!_bodyText.empty()) {
+		else if (!_bodyText.empty())
+		{
 			requestData.insert(requestData.end(), _bodyText.begin(), _bodyText.end());
 
 			requestText.append(_bodyText);
@@ -130,22 +137,24 @@ public:
 
 private:
 	std::string _method;
-	buffer_t _bodyData;  std::string _bodyText;
-	std::map<const std::string,const std::string> _headers;
+	buffer_t _bodyData;
+	std::string _bodyText;
+	std::map<const std::string, const std::string> _headers;
 };
-
 
 class RTSPResponse
 {
 public:
-	explicit RTSPResponse(const std::string& responseText) {
+	explicit RTSPResponse(const std::string &responseText)
+	{
 		assert(!responseText.empty());
 
 		std::string::size_type beg = 0, end;
 
 		// parse response for protocol
 		end = responseText.find_first_of("/", beg);
-		if (end <= beg || end == std::string::npos) {
+		if (end <= beg || end == std::string::npos)
+		{
 			throw std::invalid_argument("responseText");
 		}
 		_protocol = responseText.substr(beg, end - beg);
@@ -153,7 +162,8 @@ public:
 
 		// parse response for version
 		end = responseText.find_first_of(" ", beg);
-		if (end <= beg || end == std::string::npos) {
+		if (end <= beg || end == std::string::npos)
+		{
 			throw std::invalid_argument("responseText");
 		}
 		_version = responseText.substr(beg, end - beg);
@@ -161,7 +171,8 @@ public:
 
 		// parse response for status code
 		end = responseText.find_first_of(" ", beg);
-		if (end <= beg || end == std::string::npos) {
+		if (end <= beg || end == std::string::npos)
+		{
 			throw std::invalid_argument("responseText");
 		}
 		_statusCode = NumberParser::parseDecimalIntegerTo<int>(
@@ -170,16 +181,15 @@ public:
 
 		// parse response for status text
 		end = responseText.find_first_of("\r\n", beg);
-		if (end <= beg || end == std::string::npos) {
+		if (end <= beg || end == std::string::npos)
+		{
 			throw std::invalid_argument("responseText");
 		}
 		_statusText = responseText.substr(beg, end - beg);
 		beg = responseText.find_first_not_of("\r\n", end);
 
 		// parse response headers
-		while (beg != std::string::npos
-			&& end <= responseText.length() - 4
-			&& responseText.compare(end, 4, "\r\n\r\n"))
+		while (beg != std::string::npos && end <= responseText.length() - 4 && responseText.compare(end, 4, "\r\n\r\n"))
 		{
 			// tokenize header into name and value
 			end = responseText.find_first_of(":", beg);
@@ -198,72 +208,69 @@ public:
 		{
 			assert(hasHeader(CONTENT_LENGTH_HEADER));
 			assert(contentLength == NumberParser::parseDecimalIntegerTo<
-				std::string::size_type>(getHeader(CONTENT_LENGTH_HEADER)));
+										std::string::size_type>(getHeader(CONTENT_LENGTH_HEADER)));
 
 			body = responseText.substr(end + 4);
 		}
 	}
 
 	int statusCode() const { return _statusCode; }
-	bool hasHeader(const std::string& name) const { return !!_headers.count(name); }
-	const std::string& getHeader(const std::string& name) { return _headers[name]; }
+	bool hasHeader(const std::string &name) const { return !!_headers.count(name); }
+	const std::string &getHeader(const std::string &name) { return _headers[name]; }
 
 	std::string body;
-private:
-	int _statusCode;  std::string _statusText;
-	std::string _protocol;  std::string _version;
-	std::map<const std::string,const std::string> _headers;
-};
 
+private:
+	int _statusCode;
+	std::string _statusText;
+	std::string _protocol;
+	std::string _version;
+	std::map<const std::string, const std::string> _headers;
+};
 
 class RTSPClientImpl : private Uncopyable
 {
 	friend class RTSPClient;
 
-	 RTSPClientImpl(StreamSocket&, const uint32_t& remoteControlId);
+	RTSPClientImpl(StreamSocket &, const uint32_t &remoteControlId);
 	~RTSPClientImpl();
 
-	RTSPResponse sendRequestReceiveResponse(RTSPRequest&);
-	void sendRequest(const buffer_t&);
+	RTSPResponse sendRequestReceiveResponse(RTSPRequest &);
+	void sendRequest(const buffer_t &);
 	std::string receiveResponse();
 
-	void parseAuthenticateHeader(const std::string&);
+	void parseAuthenticateHeader(const std::string &);
 	std::string buildAuthorizationHeader(
-		const std::string& requestMethod, const std::string& requestURI) const;
+		const std::string &requestMethod, const std::string &requestURI) const;
 
 private:
-	FastMutex       _rtspMutex;
-	StreamSocket    _rtspSocket;
+	FastMutex _rtspMutex;
+	StreamSocket _rtspSocket;
 
-	bool            _teardownRequired;
-	uint32_t        _messageSequenceNumber;
-	uint32_t        _localSessionId;
-	std::string     _remoteSessionId;
-	const uint32_t& _remoteControlId;
+	bool _teardownRequired;
+	uint32_t _messageSequenceNumber;
+	uint32_t _localSessionId;
+	std::string _remoteSessionId;
+	const uint32_t &_remoteControlId;
 
-	int             _authenticationCasing;
-	std::string     _authenticationMethod;
-	std::string     _authenticationRealm;
-	std::string     _authenticationNonce;
-	std::string     _authenticationPassword;
+	int _authenticationCasing;
+	std::string _authenticationMethod;
+	std::string _authenticationRealm;
+	std::string _authenticationNonce;
+	std::string _authenticationPassword;
 };
-
 
 //------------------------------------------------------------------------------
 
-
-RTSPClient::RTSPClient(StreamSocket& socket, const uint32_t& remoteControlId)
-:
-	_impl(new RTSPClientImpl(socket, remoteControlId))
+RTSPClient::RTSPClient(StreamSocket &socket, const uint32_t &remoteControlId)
+	: _impl(new RTSPClientImpl(socket, remoteControlId))
 {
 }
-
 
 RTSPClient::~RTSPClient()
 {
 	delete _impl;
 }
-
 
 bool RTSPClient::isReady() const
 {
@@ -276,8 +283,7 @@ bool RTSPClient::isReady() const
 			if (_impl->_rtspSocket.poll(0, Socket::SELECT_READ))
 			{
 				int buffer;
-				const int result = const_cast<RTSPClient*>(this)->_impl->
-					_rtspSocket.receiveBytes(&buffer, sizeof(buffer), MSG_PEEK);
+				const int result = const_cast<RTSPClient *>(this)->_impl->_rtspSocket.receiveBytes(&buffer, sizeof(buffer), MSG_PEEK);
 				isReady = (result > 0);
 			}
 			else
@@ -287,7 +293,7 @@ bool RTSPClient::isReady() const
 			}
 		}
 	}
-	catch (const ConnectionResetException&)
+	catch (const ConnectionResetException &)
 	{
 	}
 	CATCH_ALL
@@ -295,12 +301,10 @@ bool RTSPClient::isReady() const
 	return isReady;
 }
 
-
-void RTSPClient::setPassword(const std::string& password)
+void RTSPClient::setPassword(const std::string &password)
 {
 	_impl->_authenticationPassword = password;
 }
-
 
 /**
  * Sends RTSP OPTIONS message.
@@ -308,7 +312,7 @@ void RTSPClient::setPassword(const std::string& password)
  * @param rsaKey optional RSA encryption key
  * @return response status code (positive) or protocol error code (negative)
  */
-int RTSPClient::doOptions(void* const rsaKey)
+int RTSPClient::doOptions(void *const rsaKey)
 {
 	RTSPRequest request("OPTIONS");
 	buffer_t challengeNonce(16);
@@ -321,25 +325,23 @@ int RTSPClient::doOptions(void* const rsaKey)
 		// base64 encode challenge nonce
 		std::vector<char> encodedChallengeNonce(32);
 		const int encodedChallengeNonceLength = EVP_EncodeBlock(
-			(unsigned char*) &encodedChallengeNonce[0],
-			(unsigned char*) &challengeNonce[0],
-			(int) challengeNonce.size());
-		if (encodedChallengeNonceLength <= 0
-			|| encodedChallengeNonceLength > (int) encodedChallengeNonce.size())
+			(unsigned char *)&encodedChallengeNonce[0],
+			(unsigned char *)&challengeNonce[0],
+			(int)challengeNonce.size());
+		if (encodedChallengeNonceLength <= 0 || encodedChallengeNonceLength > (int)encodedChallengeNonce.size())
 		{
 			throw std::runtime_error("EVP_EncodeBlock failed");
 		}
 		encodedChallengeNonce.resize(encodedChallengeNonceLength);
 
 		// remove padding from base64-encoded challenge nonce
-		while (encodedChallengeNonce.size() > 0
-			&& encodedChallengeNonce.back() == '=')
+		while (encodedChallengeNonce.size() > 0 && encodedChallengeNonce.back() == '=')
 		{
 			encodedChallengeNonce.pop_back();
 		}
 
 		request.setHeader(CHALLENGE_REQUEST_HEADER,
-			std::string(&encodedChallengeNonce[0], encodedChallengeNonce.size()));
+						  std::string(&encodedChallengeNonce[0], encodedChallengeNonce.size()));
 	}
 
 	RTSPResponse response(_impl->sendRequestReceiveResponse(request));
@@ -369,20 +371,18 @@ int RTSPClient::doOptions(void* const rsaKey)
 		buffer_t encryptedResponseNonce(
 			buffer_t::size_type(encodedResponseNonce.length() * 0.75));
 		const int encryptedResponseNonceLength = EVP_DecodeBlock(
-			(unsigned char*) &encryptedResponseNonce[0],
-			(unsigned char*) encodedResponseNonce.c_str(),
-			(int) encodedResponseNonce.length());
-		if (encryptedResponseNonceLength <= 0
-			|| encryptedResponseNonceLength > (int) encryptedResponseNonce.size())
+			(unsigned char *)&encryptedResponseNonce[0],
+			(unsigned char *)encodedResponseNonce.c_str(),
+			(int)encodedResponseNonce.length());
+		if (encryptedResponseNonceLength <= 0 || encryptedResponseNonceLength > (int)encryptedResponseNonce.size())
 		{
 			throw std::runtime_error("EVP_DecodeBlock failed");
 		}
 
-		assert(RSA_size((RSA*) rsaKey) == 256);
+		assert(RSA_size((RSA *)rsaKey) == 256);
 
 		// remove padding from RSA-encrypted response nonce
-		while (encryptedResponseNonce.size() > 256
-			&& encryptedResponseNonce.back() == 0)
+		while (encryptedResponseNonce.size() > 256 && encryptedResponseNonce.back() == 0)
 		{
 			encryptedResponseNonce.pop_back();
 		}
@@ -396,18 +396,17 @@ int RTSPClient::doOptions(void* const rsaKey)
 		// RSA decrypt response nonce
 		buffer_t responseNonce(256);
 		const int responseNonceLength = RSA_public_decrypt(
-			(int) encryptedResponseNonce.size(),
-			(unsigned char*) &encryptedResponseNonce[0],
-			(unsigned char*) &responseNonce[0],
-			(RSA*) rsaKey,
+			(int)encryptedResponseNonce.size(),
+			(unsigned char *)&encryptedResponseNonce[0],
+			(unsigned char *)&responseNonce[0],
+			(RSA *)rsaKey,
 			RSA_PKCS1_PADDING);
-		if (responseNonceLength <= 0
-			|| responseNonceLength > (int) responseNonce.size())
+		if (responseNonceLength <= 0 || responseNonceLength > (int)responseNonce.size())
 		{
 			return -200002;
 		}
 
-		if (responseNonceLength < (int) challengeNonce.size())
+		if (responseNonceLength < (int)challengeNonce.size())
 		{
 			return -200003;
 		}
@@ -423,14 +422,13 @@ int RTSPClient::doOptions(void* const rsaKey)
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP POST /auth-setup message.
  *
  * @param pk remote device public key
  * @return response status code (positive)
  */
-int RTSPClient::doPostAuth(const std::string& pk)
+int RTSPClient::doPostAuth(const std::string &pk)
 {
 	buffer_t bytes;
 	int n = pk.length();
@@ -449,7 +447,6 @@ int RTSPClient::doPostAuth(const std::string& pk)
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP ANNOUNCE message.
  *
@@ -457,7 +454,7 @@ int RTSPClient::doPostAuth(const std::string& pk)
  * @param aesIV AES initialization vector
  * @return response status code (positive)
  */
-int RTSPClient::doAnnounce(const std::string& aesKey, const std::string& aesIV)
+int RTSPClient::doAnnounce(const std::string &aesKey, const std::string &aesIV)
 {
 	// generate local session identifier
 	Random::fill(&_impl->_localSessionId, sizeof(uint32_t));
@@ -496,7 +493,6 @@ int RTSPClient::doAnnounce(const std::string& aesKey, const std::string& aesIV)
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP SETUP message.
  *
@@ -508,13 +504,14 @@ int RTSPClient::doAnnounce(const std::string& aesKey, const std::string& aesIV)
  * @return response status code (positive) or protocol error code (negative)
  */
 int RTSPClient::doSetup(
-	uint16_t& serverPort, uint16_t& controlPort, uint16_t& timingPort,
-	unsigned int& audioLatency, AudioJackStatus& audioJackStatus)
+	uint16_t &serverPort, uint16_t &controlPort, uint16_t &timingPort,
+	unsigned int &audioLatency, AudioJackStatus &audioJackStatus)
 {
 	RTSPRequest request("SETUP");
 	request.setHeader(TRANSPORT_HEADER,
-		Poco::format("RTP/AVP/UDP;unicast;interleaved=0-1;mode=record;"
-			"control_port=%hu;timing_port=%hu", controlPort, timingPort));
+					  Poco::format("RTP/AVP/UDP;unicast;interleaved=0-1;mode=record;"
+								   "control_port=%hu;timing_port=%hu",
+								   controlPort, timingPort));
 
 	RTSPResponse response(_impl->sendRequestReceiveResponse(request));
 
@@ -528,7 +525,7 @@ int RTSPClient::doSetup(
 	{
 		return -200100;
 	}
-	const std::string& sessionHeader(response.getHeader(SESSION_HEADER));
+	const std::string &sessionHeader(response.getHeader(SESSION_HEADER));
 
 	// validate session header
 	if (sessionHeader.empty())
@@ -542,7 +539,7 @@ int RTSPClient::doSetup(
 	{
 		return -200102;
 	}
-	const std::string& transportHeader(response.getHeader(TRANSPORT_HEADER));
+	const std::string &transportHeader(response.getHeader(TRANSPORT_HEADER));
 
 	// parse transport header
 	std::string::size_type beg = 0;
@@ -577,7 +574,7 @@ int RTSPClient::doSetup(
 	// check for audio latency header
 	if (response.hasHeader(AUDIO_LATENCY_HEADER))
 	{
-		const std::string& audioLatencyHeader(response.getHeader(AUDIO_LATENCY_HEADER));
+		const std::string &audioLatencyHeader(response.getHeader(AUDIO_LATENCY_HEADER));
 
 		// parse audio latency header
 		audioLatency = NumberParser::parseDecimalIntegerTo<unsigned int>(audioLatencyHeader);
@@ -586,7 +583,7 @@ int RTSPClient::doSetup(
 	// check for audio jack status header
 	if (response.hasHeader(AUDIO_JACK_STATUS_HEADER))
 	{
-		const std::string& audioJackStatusHeader(response.getHeader(AUDIO_JACK_STATUS_HEADER));
+		const std::string &audioJackStatusHeader(response.getHeader(AUDIO_JACK_STATUS_HEADER));
 
 		// parse audio jack status header
 		audioJackStatus = (audioJackStatusHeader == "disconnected" ? AUDIO_JACK_DISCONNECTED : AUDIO_JACK_CONNECTED);
@@ -594,7 +591,6 @@ int RTSPClient::doSetup(
 
 	return response.statusCode();
 }
-
 
 /**
  * Sends RTSP RECORD message.
@@ -605,12 +601,12 @@ int RTSPClient::doSetup(
  * @return response status code (positive)
  */
 int RTSPClient::doRecord(
-	const uint16_t rtpSeqNum, const uint32_t rtpTime, unsigned int& audioLatency)
+	const uint16_t rtpSeqNum, const uint32_t rtpTime, unsigned int &audioLatency)
 {
 	RTSPRequest request("RECORD");
 	request.setHeader(RANGE_HEADER, "npt=0-");
 	request.setHeader(RTP_INFO_HEADER,
-		Poco::format("seq=%hu;rtptime=%u", rtpSeqNum, rtpTime));
+					  Poco::format("seq=%hu;rtptime=%u", rtpSeqNum, rtpTime));
 
 	RTSPResponse response(_impl->sendRequestReceiveResponse(request));
 
@@ -622,7 +618,7 @@ int RTSPClient::doRecord(
 	// check for audio latency header
 	if (response.hasHeader(AUDIO_LATENCY_HEADER))
 	{
-		const std::string& audioLatencyHeader(response.getHeader(AUDIO_LATENCY_HEADER));
+		const std::string &audioLatencyHeader(response.getHeader(AUDIO_LATENCY_HEADER));
 
 		// parse audio latency header
 		audioLatency = NumberParser::parseDecimalIntegerTo<unsigned int>(audioLatencyHeader);
@@ -635,7 +631,6 @@ int RTSPClient::doRecord(
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP FLUSH message.
  *
@@ -647,13 +642,12 @@ int RTSPClient::doFlush(const uint16_t rtpSeqNum, const uint32_t rtpTime)
 {
 	RTSPRequest request("FLUSH");
 	request.setHeader(RTP_INFO_HEADER,
-		Poco::format("seq=%hu;rtptime=%u", rtpSeqNum, rtpTime));
+					  Poco::format("seq=%hu;rtptime=%u", rtpSeqNum, rtpTime));
 
 	RTSPResponse response(_impl->sendRequestReceiveResponse(request));
 
 	return response.statusCode();
 }
-
 
 /**
  * Sends RTSP TEARDOWN message.
@@ -675,7 +669,6 @@ int RTSPClient::doTeardown()
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP GET_PARAMETER message.
  *
@@ -684,7 +677,7 @@ int RTSPClient::doTeardown()
  * @return response status code (positive)
  */
 int RTSPClient::doGetParameter(
-	const std::string& parameterName, std::string& parameterValue)
+	const std::string &parameterName, std::string &parameterValue)
 {
 	parameterValue.clear();
 	assert(!parameterName.empty());
@@ -693,15 +686,13 @@ int RTSPClient::doGetParameter(
 	request.setBody(parameterName + "\r\n", "text/parameters");
 	RTSPResponse response(_impl->sendRequestReceiveResponse(request));
 
-	if (response.statusCode() == RTSP_STATUS_CODE_OK
-		&& response.getHeader(CONTENT_TYPE_HEADER) == "text/parameters")
+	if (response.statusCode() == RTSP_STATUS_CODE_OK && response.getHeader(CONTENT_TYPE_HEADER) == "text/parameters")
 	{
 		parameterValue = StringTokenizer(response.body, ":", StringTokenizer::TOK_TRIM)[1];
 	}
 
 	return response.statusCode();
 }
-
 
 /**
  * Sends RTSP SET_PARAMETER message.
@@ -711,7 +702,7 @@ int RTSPClient::doGetParameter(
  * @return response status code (positive)
  */
 int RTSPClient::doSetParameter(
-	const std::string& parameterName, const std::string& parameterValue)
+	const std::string &parameterName, const std::string &parameterValue)
 {
 	assert(!parameterName.empty());
 	assert(!parameterValue.empty());
@@ -727,7 +718,6 @@ int RTSPClient::doSetParameter(
 	return response.statusCode();
 }
 
-
 /**
  * Sends RTSP SET_PARAMETER message.
  *
@@ -737,7 +727,7 @@ int RTSPClient::doSetParameter(
  * @return response status code (positive)
  */
 int RTSPClient::doSetParameter(
-	const std::string& contentType, const buffer_t& requestBody, const uint32_t rtpTime)
+	const std::string &contentType, const buffer_t &requestBody, const uint32_t rtpTime)
 {
 	assert(!contentType.empty());
 
@@ -750,19 +740,16 @@ int RTSPClient::doSetParameter(
 	return response.statusCode();
 }
 
-
 //------------------------------------------------------------------------------
 
-
-RTSPClientImpl::RTSPClientImpl(StreamSocket& rtspSocket, const uint32_t& remoteControlId)
-:
-	_teardownRequired(false),
-	_authenticationCasing(0),
-	_messageSequenceNumber(0),
-	_localSessionId(0),
-	_remoteSessionId(),
-	_remoteControlId(remoteControlId),
-	_rtspSocket(rtspSocket)
+RTSPClientImpl::RTSPClientImpl(StreamSocket &rtspSocket, const uint32_t &remoteControlId)
+	: _teardownRequired(false),
+	  _authenticationCasing(0),
+	  _messageSequenceNumber(0),
+	  _localSessionId(0),
+	  _remoteSessionId(),
+	  _remoteControlId(remoteControlId),
+	  _rtspSocket(rtspSocket)
 {
 	_rtspSocket.setBlocking(true);
 	_rtspSocket.setKeepAlive(true);
@@ -773,7 +760,6 @@ RTSPClientImpl::RTSPClientImpl(StreamSocket& rtspSocket, const uint32_t& remoteC
 	_rtspSocket.setReceiveTimeout(Timespan(10, 0));
 }
 
-
 RTSPClientImpl::~RTSPClientImpl()
 {
 	try
@@ -783,24 +769,26 @@ RTSPClientImpl::~RTSPClientImpl()
 	CATCH_ALL
 }
 
-
-RTSPResponse RTSPClientImpl::sendRequestReceiveResponse(RTSPRequest& request)
+RTSPResponse RTSPClientImpl::sendRequestReceiveResponse(RTSPRequest &request)
 {
 	FastMutex::ScopedLock lock(_rtspMutex); // serialize request-response pairs
 
 	const std::string requestURI(_localSessionId == 0 ? (request.method() == "POST" ? "/auth-setup" : "*")
-				: Poco::format("rtsp://%s/%u", _rtspSocket.address().host().toString(), _localSessionId));
+													  : Poco::format("rtsp://%s/%u", _rtspSocket.address().host().toString(), _localSessionId));
 
 	request.setHeader(USER_AGENT_HEADER, Plugin::userAgent());
 	request.setHeader(CSEQ_HEADER, Poco::format("%u", _messageSequenceNumber + 1));
 	request.setHeader(ACTIVE_REMOTE_HEADER, Poco::format("%u", _remoteControlId));
 	request.setHeader(CLIENT_INSTANCE_HEADER, Poco::format("%016?X", Plugin::dacpId()));
 	request.setHeader(DACP_ID_HEADER, Poco::format("%016?X", Plugin::dacpId()));
-	if (!_remoteSessionId.empty()) request.setHeader(SESSION_HEADER, _remoteSessionId);
-	if (!_authenticationMethod.empty()) request.setHeader(AUTHORIZATION_HEADER,
-		buildAuthorizationHeader(request.method(), requestURI));
+	if (!_remoteSessionId.empty())
+		request.setHeader(SESSION_HEADER, _remoteSessionId);
+	if (!_authenticationMethod.empty())
+		request.setHeader(AUTHORIZATION_HEADER,
+						  buildAuthorizationHeader(request.method(), requestURI));
 
-	buffer_t requestData;  std::string requestText;
+	buffer_t requestData;
+	std::string requestText;
 	request.build(requestData, requestText, requestURI);
 
 	Debugger::print(requestText + std::string(80, '-'));
@@ -817,7 +805,7 @@ RTSPResponse RTSPClientImpl::sendRequestReceiveResponse(RTSPRequest& request)
 	// validate response sequence number
 	if (response.hasHeader(CSEQ_HEADER))
 	{
-		const std::string& cSeqHeader(response.getHeader(CSEQ_HEADER));
+		const std::string &cSeqHeader(response.getHeader(CSEQ_HEADER));
 		assert(_messageSequenceNumber == NumberParser::parseDecimalIntegerTo<uint32_t>(cSeqHeader));
 	}
 
@@ -830,12 +818,11 @@ RTSPResponse RTSPClientImpl::sendRequestReceiveResponse(RTSPRequest& request)
 	return response;
 }
 
-
-void RTSPClientImpl::sendRequest(const buffer_t& requestData)
+void RTSPClientImpl::sendRequest(const buffer_t &requestData)
 {
 	assert(!requestData.empty());
 
-	const byte_t* const requestBuffer = &requestData[0];
+	const byte_t *const requestBuffer = &requestData[0];
 	const size_t requestLength = requestData.size();
 
 	size_t bytesSent = 0;
@@ -856,7 +843,6 @@ void RTSPClientImpl::sendRequest(const buffer_t& requestData)
 		throw std::runtime_error("bytesSent != requestLength");
 	}
 }
-
 
 std::string RTSPClientImpl::receiveResponse()
 {
@@ -880,17 +866,17 @@ std::string RTSPClientImpl::receiveResponse()
 		lastFour = (lastFour << 8) | octet;
 		responseBuffer[responseLength] = octet;
 		responseLength += static_cast<size_t>(code);
-	}
-	while (lastFour != 0x0D0A0D0A); // read until "\r\n\r\n"
+	} while (lastFour != 0x0D0A0D0A); // read until "\r\n\r\n"
 
 	// read response body if content length is provided
-	std::smatch<std::vector<char>::iterator> mr;
+	std::match_results<std::vector<char>::iterator> mr;
 	if (std::regex_search(responseBuffer.begin(), responseBuffer.end(),
-							   mr, std::regex("\\bContent-Length:\\s*(\\d+)\r\n")))
+						  mr, std::regex("\\bContent-Length:\\s*(\\d+)\r\n")))
 	{
 		const size_t contentLength = NumberParser::parseDecimalIntegerTo<size_t>(mr[1]);
 
-		if (contentLength > responseBuffer.size() - responseLength) responseBuffer.resize(responseLength + contentLength);
+		if (contentLength > responseBuffer.size() - responseLength)
+			responseBuffer.resize(responseLength + contentLength);
 		code = _rtspSocket.receiveBytes(&responseBuffer[responseLength], contentLength);
 		assert(static_cast<size_t>(code) == contentLength);
 		responseLength += contentLength;
@@ -900,8 +886,7 @@ std::string RTSPClientImpl::receiveResponse()
 	return std::string(&responseBuffer[0], responseLength);
 }
 
-
-void RTSPClientImpl::parseAuthenticateHeader(const std::string& authenticateHeader)
+void RTSPClientImpl::parseAuthenticateHeader(const std::string &authenticateHeader)
 {
 	assert(!authenticateHeader.empty());
 
@@ -948,17 +933,16 @@ void RTSPClientImpl::parseAuthenticateHeader(const std::string& authenticateHead
 	_authenticationCasing = (_authenticationNonce.find_first_of("ABCDEF") != std::string::npos ? 1 : -1);
 }
 
-
-#define HEX(bytes, length, string, capacity, casing)                           \
-{                                                                              \
-	const char* format = (casing < 0 ? "%.2x" : casing > 0 ? "%.2X" : NULL);   \
-	for (size_t i = 0; i < length; ++i)                                        \
-		sprintf_s(string + 2 * i, capacity - 2 * i, format, bytes[i]);         \
-}
-
+#define HEX(bytes, length, string, capacity, casing)                       \
+	{                                                                      \
+		const char *format = (casing < 0 ? "%.2x" : casing > 0 ? "%.2X"    \
+															   : NULL);    \
+		for (size_t i = 0; i < length; ++i)                                \
+			sprintf_s(string + 2 * i, capacity - 2 * i, format, bytes[i]); \
+	}
 
 std::string RTSPClientImpl::buildAuthorizationHeader(
-	const std::string& requestMethod, const std::string& requestURI) const
+	const std::string &requestMethod, const std::string &requestURI) const
 {
 	int length;
 	char temp[256];
@@ -977,40 +961,40 @@ std::string RTSPClientImpl::buildAuthorizationHeader(
 
 	// concatenate username, realm and password
 	length = sprintf_s(temp, sizeof(temp), "iTunes:%s:%s",
-		_authenticationRealm.c_str(), _authenticationPassword.c_str());
+					   _authenticationRealm.c_str(), _authenticationPassword.c_str());
 	assert(length > 0 && length < sizeof(temp));
 
 	// create HA1 digest
-	MD5((unsigned char*) temp, length, ha1Digest);
+	MD5((unsigned char *)temp, length, ha1Digest);
 	HEX(ha1Digest, sizeof(ha1Digest), ha1String, sizeof(ha1String),
 		_authenticationCasing);
 
 	// concatenate request method and URI
 	length = sprintf_s(temp, sizeof(temp), "%s:%s",
-		requestMethod.c_str(), requestURI.c_str());
+					   requestMethod.c_str(), requestURI.c_str());
 	assert(length > 0 && length < sizeof(temp));
 
 	// create HA2 digest
-	MD5((unsigned char*) temp, length, ha2Digest);
+	MD5((unsigned char *)temp, length, ha2Digest);
 	HEX(ha2Digest, sizeof(ha2Digest), ha2String, sizeof(ha2String),
 		_authenticationCasing);
 
 	// concatenate HA1 digest, nonce and HA2 digest
 	length = sprintf_s(temp, sizeof(temp), "%s:%s:%s",
-		ha1String, _authenticationNonce.c_str(), ha2String);
+					   ha1String, _authenticationNonce.c_str(), ha2String);
 	assert(length > 0 && length < sizeof(temp));
 
 	// create response digest
-	MD5((unsigned char*) temp, length, responseDigest);
+	MD5((unsigned char *)temp, length, responseDigest);
 	HEX(responseDigest, sizeof(responseDigest), responseString,
 		sizeof(responseString), _authenticationCasing);
 
 	// build request authorization header
 	length = sprintf_s(temp, sizeof(temp),
-		"%s username=\"iTunes\", realm=\"%s\", "
-		"nonce=\"%s\", uri=\"%s\", response=\"%s\"",
-		_authenticationMethod.c_str(), _authenticationRealm.c_str(),
-		_authenticationNonce.c_str(), requestURI.c_str(), responseString);
+					   "%s username=\"iTunes\", realm=\"%s\", "
+					   "nonce=\"%s\", uri=\"%s\", response=\"%s\"",
+					   _authenticationMethod.c_str(), _authenticationRealm.c_str(),
+					   _authenticationNonce.c_str(), requestURI.c_str(), responseString);
 	assert(length > 0 && length < sizeof(temp));
 
 	return temp;

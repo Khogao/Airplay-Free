@@ -34,106 +34,115 @@
 #include <Poco/Timestamp.h>
 #include <Poco/Net/StreamSocket.h>
 
-
 using Poco::Timespan;
 using Poco::Timestamp;
 using Poco::Net::StreamSocket;
 
+namespace
+{
 
-namespace {
+	class DeviceConnector : public ServiceDiscovery::ResolveListener, public ServiceDiscovery::QueryListener
+	{
+	public:
+		DeviceConnector(const DeviceInfo &device) : _device(device), _port(0), _resolved(false), _sdRef(NULL) {}
 
-class DeviceConnector : public ServiceDiscovery::ResolveListener, public ServiceDiscovery::QueryListener {
-public:
-    DeviceConnector(const DeviceInfo& device) : _device(device), _port(0), _resolved(false), _sdRef(NULL) {}
+		void connect(Poco::Net::StreamSocket &socket)
+		{
+			if (_device.isZeroConf())
+			{
+				_sdRef = ServiceDiscovery::resolveService(_device.addr().first, _device.addr().second, *this);
+				ServiceDiscovery::start(_sdRef);
 
-    void connect(Poco::Net::StreamSocket& socket) {
-        if (_device.isZeroConf()) {
-            _sdRef = ServiceDiscovery::resolveService(_device.addr().first, _device.addr().second, *this);
-            ServiceDiscovery::start(_sdRef);
-            
-            try {
-                if (!_event.tryWait(5000)) { // 5 seconds timeout
-                    if (_sdRef) {
-                        ServiceDiscovery::stop(_sdRef);
-                        _sdRef = NULL;
-                    }
-                    throw std::runtime_error("Timeout resolving device service");
-                }
-            } catch (...) {
-                if (_sdRef) {
-                    ServiceDiscovery::stop(_sdRef);
-                    _sdRef = NULL;
-                }
-                throw;
-            }
-            
-            if (_sdRef) {
-                ServiceDiscovery::stop(_sdRef);
-                _sdRef = NULL;
-            }
+				try
+				{
+					if (!_event.tryWait(5000))
+					{ // 5 seconds timeout
+						if (_sdRef)
+						{
+							ServiceDiscovery::stop(_sdRef);
+							_sdRef = NULL;
+						}
+						throw std::runtime_error("Timeout resolving device service");
+					}
+				}
+				catch (...)
+				{
+					if (_sdRef)
+					{
+						ServiceDiscovery::stop(_sdRef);
+						_sdRef = NULL;
+					}
+					throw;
+				}
 
-            if (!_resolved) {
-                 throw std::runtime_error("Failed to resolve device address");
-            }
-            socket.connect(_resolvedAddress);
-        } else {
-            std::string hostAndPort = _device.addr().first + ":" + _device.addr().second;
-            socket.connect(Poco::Net::SocketAddress(hostAndPort));
-        }
-    }
+				if (_sdRef)
+				{
+					ServiceDiscovery::stop(_sdRef);
+					_sdRef = NULL;
+				}
 
-    // ResolveListener
-    void onServiceResolved(DNSServiceRef sdRef, std::string fullName, std::string host, uint16_t port, const ServiceDiscovery::TXTRecord& txt) override {
-         ServiceDiscovery::stop(sdRef);
-         _sdRef = NULL; 
-         _port = port;
-         _sdRef = ServiceDiscovery::queryService(host, kDNSServiceType_A, *this);
-         ServiceDiscovery::start(_sdRef);
-    }
+				if (!_resolved)
+				{
+					throw std::runtime_error("Failed to resolve device address");
+				}
+				socket.connect(_resolvedAddress);
+			}
+			else
+			{
+				std::string hostAndPort = _device.addr().first + ":" + _device.addr().second;
+				socket.connect(Poco::Net::SocketAddress(hostAndPort));
+			}
+		}
 
-    // QueryListener
-    void onServiceQueried(DNSServiceRef sdRef, std::string rrname, uint16_t rrtype, uint16_t rdlen, const void* rdata, uint32_t ttl) override {
-         ServiceDiscovery::stop(sdRef);
-         _sdRef = NULL;
-         _resolvedAddress = Poco::Net::SocketAddress(Poco::Net::IPAddress(rdata, rdlen), _port);
-         _resolved = true;
-         _event.set();
-    }
+		// ResolveListener
+		void onServiceResolved(DNSServiceRef sdRef, std::string fullName, std::string host, uint16_t port, const ServiceDiscovery::TXTRecord &txt) override
+		{
+			ServiceDiscovery::stop(sdRef);
+			_sdRef = NULL;
+			_port = port;
+			_sdRef = ServiceDiscovery::queryService(host, kDNSServiceType_A, *this);
+			ServiceDiscovery::start(_sdRef);
+		}
 
-private:
-    const DeviceInfo& _device;
-    Poco::Event _event;
-    DNSServiceRef _sdRef;
-    uint16_t _port;
-    Poco::Net::SocketAddress _resolvedAddress;
-    bool _resolved;
-};
+		// QueryListener
+		void onServiceQueried(DNSServiceRef sdRef, std::string rrname, uint16_t rrtype, uint16_t rdlen, const void *rdata, uint32_t ttl) override
+		{
+			ServiceDiscovery::stop(sdRef);
+			_sdRef = NULL;
+			_resolvedAddress = Poco::Net::SocketAddress(Poco::Net::IPAddress(rdata, rdlen), _port);
+			_resolved = true;
+			_event.set();
+		}
+
+	private:
+		const DeviceInfo &_device;
+		Poco::Event _event;
+		DNSServiceRef _sdRef;
+		uint16_t _port;
+		Poco::Net::SocketAddress _resolvedAddress;
+		bool _resolved;
+	};
 
 }
-
 
 // shorthand for accessing the implementation type of device output sink
 #define RAOP_ENGINE (*(*this).outputSinkForDevices().cast<RAOPEngine>())
 
-
-DeviceManager::DeviceManager(Player& player, OutputObserver& outputObserver)
-:
-	_volume(FLT_MIN),
-	_player(player),
-	_outputObserver(outputObserver),
-	_deviceObserver(*this, &DeviceManager::onDeviceChanged)
+DeviceManager::DeviceManager(Player &player, OutputObserver &outputObserver)
+	: _volume(FLT_MIN),
+	  _player(player),
+	  _outputObserver(outputObserver),
+	  _deviceObserver(*this, &DeviceManager::onDeviceChanged)
 {
 	Options::addObserver(_deviceObserver);
 	DeviceDiscovery::browseDevices(*this);
 }
-
 
 DeviceManager::~DeviceManager()
 {
 	DeviceDiscovery::stopBrowsing(*this);
 	Options::removeObserver(_deviceObserver);
 }
-
 
 void DeviceManager::openDevices()
 {
@@ -143,16 +152,13 @@ void DeviceManager::openDevices()
 	const Options::SharedPtr options = Options::getOptions();
 
 	for (DeviceInfoSet::const_iterator it = options->devices().begin();
-		it != options->devices().end(); ++it)
+		 it != options->devices().end(); ++it)
 	{
-		const DeviceInfo& deviceInfo = *it;
+		const DeviceInfo &deviceInfo = *it;
 
-		if (options->isActivated(deviceInfo.name()))
-		{
-			anyDeviceActivated = true;
-
-			openDevice(deviceInfo);
-		}
+		// License check removed - all devices automatically activated
+		anyDeviceActivated = true;
+		openDevice(deviceInfo);
 	}
 
 	DeviceInfoSet discovered;
@@ -162,13 +168,11 @@ void DeviceManager::openDevices()
 	}
 
 	for (DeviceInfoSet::const_iterator it = discovered.begin();
-		it != discovered.end(); ++it)
+		 it != discovered.end(); ++it)
 	{
-		if (options->isActivated(it->name()))
-		{
-			anyDeviceActivated = true;
-			openDevice(*it);
-		}
+		// License check removed - all devices automatically activated
+		anyDeviceActivated = true;
+		openDevice(*it);
 	}
 
 	if (!anyDeviceActivated)
@@ -186,7 +190,6 @@ void DeviceManager::openDevices()
 	}
 }
 
-
 void DeviceManager::closeDevices()
 {
 	ScopedLock lock(_mutex);
@@ -198,7 +201,6 @@ void DeviceManager::closeDevices()
 		device->close();
 	}
 }
-
 
 bool DeviceManager::isAnyDeviceOpen(const bool ping) const
 {
@@ -217,12 +219,12 @@ bool DeviceManager::isAnyDeviceOpen(const bool ping) const
 	return false;
 }
 
-
 void DeviceManager::setVolume(const float level)
 {
 	ScopedLock lock(_mutex);
 
-	const float delta = volumeSet() ? (level - _volume) : 0;  _volume = level;
+	const float delta = volumeSet() ? (level - _volume) : 0;
+	_volume = level;
 
 	for (DeviceMap::const_iterator it = _devices.begin(); it != _devices.end(); ++it)
 	{
@@ -235,13 +237,15 @@ void DeviceManager::setVolume(const float level)
 	}
 }
 
-
 void DeviceManager::setOffset(const time_t offset)
 {
 	ScopedLock lock(_mutex);
 
 	const time_t length = _outputMetadata.length();
-	if (length > 0) { assert( offset <= length ); }
+	if (length > 0)
+	{
+		assert(offset <= length);
+	}
 
 	// calculate timestamps of chapter/track begin and end
 	_outputInterval = RAOP_ENGINE.getOutputInterval(length, offset);
@@ -257,11 +261,10 @@ void DeviceManager::setOffset(const time_t offset)
 	}
 }
 
-
-void DeviceManager::setMetadata(const OutputMetadata& metadata)
+void DeviceManager::setMetadata(const OutputMetadata &metadata)
 {
-	if (metadata.length() == _outputMetadata.length()
-		&& metadata.playlistPos() == _outputMetadata.playlistPos()) return;
+	if (metadata.length() == _outputMetadata.length() && metadata.playlistPos() == _outputMetadata.playlistPos())
+		return;
 
 	ScopedLock lock(_mutex);
 
@@ -278,7 +281,6 @@ void DeviceManager::setMetadata(const OutputMetadata& metadata)
 	}
 }
 
-
 void DeviceManager::clearMetadata()
 {
 	ScopedLock lock(_mutex);
@@ -287,12 +289,10 @@ void DeviceManager::clearMetadata()
 	_outputMetadata = OutputMetadata();
 }
 
-
-const OutputFormat& DeviceManager::outputFormat() const
+const OutputFormat &DeviceManager::outputFormat() const
 {
 	return RAOPEngine::outputFormat();
 }
-
 
 OutputSink::SharedPtr DeviceManager::outputSinkForDevices()
 {
@@ -302,7 +302,6 @@ OutputSink::SharedPtr DeviceManager::outputSinkForDevices()
 	}
 	return _deviceOutputSink;
 }
-
 
 Device::SharedPtr DeviceManager::lookupDevice(const uint32_t remoteControlId) const
 {
@@ -324,11 +323,9 @@ Device::SharedPtr DeviceManager::lookupDevice(const uint32_t remoteControlId) co
 	return NULL;
 }
 
-
 //------------------------------------------------------------------------------
 
-
-void DeviceManager::onDeviceFound(const DeviceInfo& device)
+void DeviceManager::onDeviceFound(const DeviceInfo &device)
 {
 	{
 		ScopedLock lock(_mutex);
@@ -341,8 +338,7 @@ void DeviceManager::onDeviceFound(const DeviceInfo& device)
 	}
 }
 
-
-void DeviceManager::onDeviceLost(const DeviceInfo& device)
+void DeviceManager::onDeviceLost(const DeviceInfo &device)
 {
 	{
 		ScopedLock lock(_mutex);
@@ -352,61 +348,54 @@ void DeviceManager::onDeviceLost(const DeviceInfo& device)
 	destroyDevice(device);
 }
 
-
-Device::SharedPtr DeviceManager::createDevice(const DeviceInfo& deviceInfo)
+Device::SharedPtr DeviceManager::createDevice(const DeviceInfo &deviceInfo)
 {
-	const std::string& auth = deviceInfo.isZeroConf() ? DeviceDiscovery::getDeviceAuth(deviceInfo) : "";
+	const std::string &auth = deviceInfo.isZeroConf() ? DeviceDiscovery::getDeviceAuth(deviceInfo) : "";
 
 	switch (LOWORD(deviceInfo.type()))
 	{
 	case DeviceInfo::APX:
 		return new RAOPDevice(RAOP_ENGINE, auth,
-			RAOPDevice::ET_NONE, RAOPDevice::MD_NONE);
+							  RAOPDevice::ET_NONE, RAOPDevice::MD_NONE);
 
 	case DeviceInfo::AS3:
 		return new RAOPDevice(RAOP_ENGINE, auth,
-			RAOPDevice::ET_SECURED, RAOPDevice::MD_NONE);
+							  RAOPDevice::ET_SECURED, RAOPDevice::MD_NONE);
 
 	case DeviceInfo::AS4:
 	case DeviceInfo::ATV:
 	case DeviceInfo::AVR:
 		return new RAOPDevice(RAOP_ENGINE, auth,
-			RAOPDevice::ET_NONE, RAOPDevice::MD_TEXT
-							   | RAOPDevice::MD_IMAGE
-							   | RAOPDevice::MD_PROGRESS);
+							  RAOPDevice::ET_NONE, RAOPDevice::MD_TEXT | RAOPDevice::MD_IMAGE | RAOPDevice::MD_PROGRESS);
 
 	case DeviceInfo::AFS:
 		return new RAOPDevice(RAOP_ENGINE, auth,
-			RAOPDevice::ET_SECURED, RAOPDevice::MD_TEXT
-								  | RAOPDevice::MD_IMAGE
-								  | RAOPDevice::MD_PROGRESS);
+							  RAOPDevice::ET_SECURED, RAOPDevice::MD_TEXT | RAOPDevice::MD_IMAGE | RAOPDevice::MD_PROGRESS);
 
 	case DeviceInfo::ANY:
 		return new RAOPDevice(RAOP_ENGINE, auth,
-			// check device type bit-field for encryption and metadata settings
-			!!(HIWORD(deviceInfo.type()) & 0x08), (HIWORD(deviceInfo.type()) & 0x07));
+							  // check device type bit-field for encryption and metadata settings
+							  !!(HIWORD(deviceInfo.type()) & 0x08), (HIWORD(deviceInfo.type()) & 0x07));
 
 	default:
 		const std::string message(Poco::format(
 			"Unable to playback to remote speakers \"%s\".\n"
 			"Device type (%i) is unsupported at this time.",
-			deviceInfo.name(), (int) deviceInfo.type()));
+			deviceInfo.name(), (int)deviceInfo.type()));
 		std::cerr << message << std::endl;
 
 		throw std::runtime_error(message);
 	}
 }
 
-
-void DeviceManager::destroyDevice(const DeviceInfo& deviceInfo)
+void DeviceManager::destroyDevice(const DeviceInfo &deviceInfo)
 {
 	ScopedLock lock(_mutex);
 
 	_devices.erase(deviceInfo.name());
 }
 
-
-void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
+void DeviceManager::openDevice(const DeviceInfo &deviceInfo)
 {
 	try
 	{
@@ -421,19 +410,22 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			// run dialog box that will asynchronously resolve service name to
 			// host and port, resolve host to IP address and connect to address
 			// and port
-            StreamSocket socket;
-            try {
-                DeviceConnector connector(deviceInfo);
-                connector.connect(socket);
-            } catch (const std::exception& e) {
+			StreamSocket socket;
+			try
+			{
+				DeviceConnector connector(deviceInfo);
+				connector.connect(socket);
+			}
+			catch (const std::exception &e)
+			{
 				const std::string message(Poco::format(
 					"Unable to connect to remote speakers \"%s\": %s",
 					deviceInfo.name(), std::string(e.what())));
 				throw std::runtime_error(message);
-            }
+			}
 
 			Debugger::printf("Connected to remote speakers \"%s\" at %s.",
-				deviceInfo.name().c_str(), socket.peerAddress().toString().c_str());
+							 deviceInfo.name().c_str(), socket.peerAddress().toString().c_str());
 
 			int returnCode = device->test(socket, true);
 
@@ -446,7 +438,7 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				if (options->getPassword(deviceInfo.name()).empty())
 				{
 					// prompt user for password
-                    std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
+					std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
 					throw std::invalid_argument("Password required but not provided.");
 				}
 
@@ -470,7 +462,8 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			{
 				const std::string message(Poco::format(
 					"Unable to initiate session with remote speakers \"%s\".\n"
-					"Error code: %i", deviceInfo.name(), returnCode));
+					"Error code: %i",
+					deviceInfo.name(), returnCode));
 				std::cerr << message << std::endl;
 
 				throw std::runtime_error(message);
@@ -490,16 +483,19 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 			// run dialog box that will asynchronously resolve service name to
 			// host and port, resolve host to IP address and connect to address
 			// and port
-            StreamSocket socket;
-            try {
-                DeviceConnector connector(deviceInfo);
-                connector.connect(socket);
-            } catch (const std::exception& e) {
+			StreamSocket socket;
+			try
+			{
+				DeviceConnector connector(deviceInfo);
+				connector.connect(socket);
+			}
+			catch (const std::exception &e)
+			{
 				const std::string message(Poco::format(
 					"Unable to connect to remote speakers \"%s\": %s",
 					deviceInfo.name(), std::string(e.what())));
 				throw std::runtime_error(message);
-            }
+			}
 
 			AudioJackStatus audioJackStatus = AUDIO_JACK_CONNECTED;
 
@@ -515,7 +511,7 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				if (options->getPassword(deviceInfo.name()).empty())
 				{
 					// prompt user for password
-                    std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
+					std::cerr << "Password required for " << deviceInfo.name() << " but dialog not supported." << std::endl;
 					throw std::invalid_argument("Password required but not provided.");
 				}
 
@@ -549,14 +545,14 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				{
 					const std::string message(Poco::format(
 						"Unable to connect to remote speakers \"%s\".\n"
-						"Error code: %i", deviceInfo.name(), returnCode));
+						"Error code: %i",
+						deviceInfo.name(), returnCode));
 					std::cerr << message << std::endl;
 
 					throw std::runtime_error(message);
 				}
 			}
-			else if (audioJackStatus == AUDIO_JACK_DISCONNECTED
-				&& LOWORD(deviceInfo.type()) != DeviceInfo::AVR)
+			else if (audioJackStatus == AUDIO_JACK_DISCONNECTED && LOWORD(deviceInfo.type()) != DeviceInfo::AVR)
 			{
 				const std::string message(Poco::format(
 					"Audio jack on remote speakers \"%s\" is not connected.",
@@ -564,8 +560,10 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 				std::cerr << message << std::endl;
 			}
 
-			if (deviceInfo.type() == DeviceInfo::AVR) device->getVolume();
-			if (volumeSet()) device->setVolume(_volume, 0);
+			if (deviceInfo.type() == DeviceInfo::AVR)
+				device->getVolume();
+			if (volumeSet())
+				device->setVolume(_volume, 0);
 
 			if (_outputMetadata.length() > 0 || !_outputMetadata.title().empty())
 			{
@@ -582,13 +580,12 @@ void DeviceManager::openDevice(const DeviceInfo& deviceInfo)
 	}
 	CATCH_ALL
 
-	Options::getOptions()->setActivated(deviceInfo.name(), false);
+	// License check removed - setActivated call removed
 	Options::postNotification(
 		new DeviceNotification(DeviceNotification::DEACTIVATE, deviceInfo));
 }
 
-
-void DeviceManager::onDeviceChanged(DeviceNotification* const notification)
+void DeviceManager::onDeviceChanged(DeviceNotification *const notification)
 {
 	try
 	{

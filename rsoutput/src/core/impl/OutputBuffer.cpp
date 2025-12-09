@@ -23,27 +23,22 @@
 #include <thread>
 #include <chrono>
 
-
 static const size_t BUFFER_CAPACITY = 32 * 1024;
 
-
 OutputBuffer::OutputBuffer(OutputSink::SharedPtr outputSink)
-:
-	_buffer(BUFFER_CAPACITY),
-	_bufferAvailability(_buffer.size()),
-	_bufferReadIndex(0),
-	_bufferWriteIndex(0),
-	_outputSink(outputSink)
+	: _buffer(BUFFER_CAPACITY),
+	  _bufferAvailability(_buffer.size()),
+	  _bufferReadIndex(0),
+	  _bufferWriteIndex(0),
+	  _outputSink(outputSink)
 {
 }
-
 
 OutputBuffer::~OutputBuffer()
 {
 }
 
-
-time_t OutputBuffer::latency(const OutputFormat& format) const
+time_t OutputBuffer::latency(const OutputFormat &format) const
 {
 	return _outputSink->latency(format);
 }
@@ -55,7 +50,6 @@ size_t OutputBuffer::buffered() const
 	return (_buffer.size() - _bufferAvailability) + _outputSink->buffered();
 }
 
-
 size_t OutputBuffer::canWrite() const
 {
 	checkOutputSink();
@@ -63,8 +57,7 @@ size_t OutputBuffer::canWrite() const
 	return _bufferAvailability;
 }
 
-
-void OutputBuffer::write(const byte_t* const buffer, const size_t length)
+void OutputBuffer::write(const byte_t *const buffer, const size_t length)
 {
 	if (buffer == NULL || length == 0 || length > _bufferAvailability)
 	{
@@ -73,8 +66,7 @@ void OutputBuffer::write(const byte_t* const buffer, const size_t length)
 	}
 
 	// write data to buffer
-	if (_bufferWriteIndex < _bufferReadIndex
-		|| length <= _buffer.size() - _bufferWriteIndex)
+	if (_bufferWriteIndex < _bufferReadIndex || length <= _buffer.size() - _bufferWriteIndex)
 	{
 		std::memcpy(&_buffer[_bufferWriteIndex], buffer, length);
 	}
@@ -91,12 +83,10 @@ void OutputBuffer::write(const byte_t* const buffer, const size_t length)
 	writeToOutputSink();
 }
 
-
 void OutputBuffer::flush()
 {
 	writeToOutputSink(true);
 }
-
 
 void OutputBuffer::reset()
 {
@@ -106,9 +96,7 @@ void OutputBuffer::reset()
 	_outputSink->reset();
 }
 
-
 //------------------------------------------------------------------------------
-
 
 void OutputBuffer::checkOutputSink() const
 {
@@ -117,10 +105,9 @@ void OutputBuffer::checkOutputSink() const
 	if (canRead > 0 && canRead >= _outputSink->canWrite())
 	{
 		// resume writing to output sink if data is available and sink is as well
-		const_cast<OutputBuffer*>(this)->writeToOutputSink();
+		const_cast<OutputBuffer *>(this)->writeToOutputSink();
 	}
 }
-
 
 void OutputBuffer::writeToOutputSink(const bool flushBuffer)
 {
@@ -133,17 +120,18 @@ repeat:
 	{
 		if (canWrite == 0)
 		{
-			if (sleeps++ > 11) return;
-			std::this_thread::sleep_for(std::chrono::milliseconds(1)); goto repeat;
+			if (sleeps++ > 11)
+				return;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			goto repeat;
 		}
 		sleeps = 0;
 
 		buffer_t::const_pointer ptr;
-		const size_t doWrite = std::min(canRead, canWrite);
+		const size_t doWrite = (std::min)(canRead, canWrite);
 
 		// check if data to be written is contiguous or not
-		if (_bufferReadIndex < _bufferWriteIndex
-			|| doWrite <= _buffer.size() - _bufferReadIndex)
+		if (_bufferReadIndex < _bufferWriteIndex || doWrite <= _buffer.size() - _bufferReadIndex)
 		{
 			ptr = &_buffer[_bufferReadIndex];
 		}

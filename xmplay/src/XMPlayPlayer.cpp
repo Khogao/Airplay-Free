@@ -23,14 +23,11 @@
 #include <limits>
 #include <memory>
 
-
-XMPlayPlayer::XMPlayPlayer(XMPFUNC_MISC* miscFunc, XMPFUNC_STATUS* statusFunc)
-:
-	_miscFunc(miscFunc),
-	_statusFunc(statusFunc)
+XMPlayPlayer::XMPlayPlayer(XMPFUNC_MISC *miscFunc, XMPFUNC_STATUS *statusFunc)
+	: _miscFunc(miscFunc),
+	  _statusFunc(statusFunc)
 {
 }
-
 
 BYTE XMPlayPlayer::majorVersion() const
 {
@@ -39,7 +36,6 @@ BYTE XMPlayPlayer::majorVersion() const
 	return majorVersion;
 }
 
-
 BYTE XMPlayPlayer::minorVersion() const
 {
 	DWORD playerVersion = _miscFunc->GetVersion();
@@ -47,28 +43,24 @@ BYTE XMPlayPlayer::minorVersion() const
 	return minorVersion;
 }
 
-
 HWND XMPlayPlayer::window() const
 {
 	return _miscFunc->GetWindow();
 }
-
 
 void XMPlayPlayer::play()
 {
 	_miscFunc->PerformShortcut(80); // play/pause
 }
 
-
 void XMPlayPlayer::pause()
 {
 	_miscFunc->PerformShortcut(80); // play/pause
 }
 
-
 DWORD WINAPI stopImpl(LPVOID context)
 {
-	return ((XMPFUNC_MISC*) context)->PerformShortcut(81); // stop
+	return ((XMPFUNC_MISC *)context)->PerformShortcut(81); // stop
 }
 
 void XMPlayPlayer::stop()
@@ -79,10 +71,9 @@ void XMPlayPlayer::stop()
 	QueueUserWorkItem(stopImpl, _miscFunc, WT_EXECUTEDEFAULT);
 }
 
-
 DWORD WINAPI restartImpl(LPVOID context)
 {
-	return ((XMPFUNC_MISC*) context)->PerformShortcut(84); // restart track
+	return ((XMPFUNC_MISC *)context)->PerformShortcut(84); // restart track
 }
 
 void XMPlayPlayer::restart()
@@ -93,18 +84,15 @@ void XMPlayPlayer::restart()
 	QueueUserWorkItem(restartImpl, _miscFunc, WT_EXECUTEDEFAULT);
 }
 
-
 void XMPlayPlayer::startNext()
 {
 	_miscFunc->PerformShortcut(128); // next track
 }
 
-
 void XMPlayPlayer::startPrev()
 {
 	_miscFunc->PerformShortcut(129); // previous track
 }
-
 
 void XMPlayPlayer::increaseVolume()
 {
@@ -112,30 +100,27 @@ void XMPlayPlayer::increaseVolume()
 	_miscFunc->PerformShortcut(512); // each call produces a 2% change in volume
 }
 
-
 void XMPlayPlayer::decreaseVolume()
 {
 	_miscFunc->PerformShortcut(513); // volume down
 	_miscFunc->PerformShortcut(513); // each call produces a 2% change in volume
 }
 
-
 void XMPlayPlayer::toggleMute()
 {
 	_miscFunc->PerformShortcut(523); // toggle volume mute
 }
-
 
 void XMPlayPlayer::toggleShuffle()
 {
 	_miscFunc->PerformShortcut(313); // toggle random play order
 }
 
-
-time_t XMPlayPlayer::getPlaybackMetadata(shorts_t& listpos,
-	std::string& title, std::string& album, std::string& artist) const
+time_t XMPlayPlayer::getPlaybackMetadata(shorts_t &listpos,
+										 std::string &title, std::string &album, std::string &artist) const
 {
-	time_t length = 0; listpos = shorts_t(0,0);
+	time_t length = 0;
+	listpos = shorts_t(0, 0);
 	title.clear(), album.clear(), artist.clear();
 
 	// query player for the current playlist's length and cursor position
@@ -147,7 +132,7 @@ time_t XMPlayPlayer::getPlaybackMetadata(shorts_t& listpos,
 		if (pos <= short_max)
 		{
 			assert(pos < len);
-			listpos = std::make_pair(pos + 1, len);
+			listpos = std::make_pair(static_cast<short>(pos + 1), static_cast<short>(len));
 		}
 	}
 
@@ -181,8 +166,11 @@ time_t XMPlayPlayer::getPlaybackMetadata(shorts_t& listpos,
 			}
 			else if (key == "File" && (title.empty() || title == val))
 			{
-				char file[MAX_PATH];  title = (0 == _splitpath_s(val.c_str(),
-					NULL, 0, NULL, 0, file, sizeof(file), NULL, 0) ? file : val);
+				char file[MAX_PATH];
+				title = (0 == _splitpath_s(val.c_str(),
+										   NULL, 0, NULL, 0, file, sizeof(file), NULL, 0)
+							 ? file
+							 : val);
 			}
 		}
 
@@ -190,14 +178,15 @@ time_t XMPlayPlayer::getPlaybackMetadata(shorts_t& listpos,
 	}
 
 	xmpString.reset(_miscFunc->GetTag(TAG_ALBUM), _miscFunc->Free);
-	if (xmpString) album = xmpString.get();
+	if (xmpString)
+		album = xmpString.get();
 
 	xmpString.reset(_miscFunc->GetTag(TAG_ARTIST), _miscFunc->Free);
-	if (xmpString) artist = xmpString.get();
+	if (xmpString)
+		artist = xmpString.get();
 
 	return std::max<time_t>(length, 0);
 }
-
 
 time_t XMPlayPlayer::getPlaybackPosition() const
 {
@@ -211,7 +200,6 @@ time_t XMPlayPlayer::getPlaybackPosition() const
 
 	return 0;
 }
-
 
 DWORD_PTR XMPlayPlayer::sendIpcMessage(LPARAM lParam, WPARAM wParam) const
 {

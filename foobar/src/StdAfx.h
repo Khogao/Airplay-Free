@@ -14,8 +14,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <foobar2000/ATLHelpers/ATLHelpers.h> // includes all foobar2000 headers
-
 #include <cassert>
 #include <cctype>
 #include <climits>
@@ -49,6 +47,8 @@
 #include <tuple>
 #include <vector>
 
+#include <foobar2000/ATLHelpers/ATLHelpers.h> // includes all foobar2000 headers
+
 #include "Player.h"
 #include "Plugin.h"
 #include "Debugger.h"
@@ -57,7 +57,10 @@
 #include "OptionsDialog.h"
 #include "OutputComponent.h"
 
-namespace Options { void show_popup(HWND = core_api::get_main_window()); }
+namespace Options
+{
+	void show_popup(HWND = core_api::get_main_window());
+}
 
 //------------------------------------------------------------------------------
 
@@ -65,13 +68,14 @@ namespace core_api
 {
 	namespace
 	{
-		typedef std::tr1::function<void (void)> callback_t;
+		typedef std::tr1::function<void(void)> callback_t;
 
 		class main_thread_callback_t : public main_thread_callback
 		{
 		public:
 			main_thread_callback_t(callback_t callback) : _callback(callback) {}
 			void callback_run() { _callback(); }
+
 		private:
 			callback_t _callback;
 		};

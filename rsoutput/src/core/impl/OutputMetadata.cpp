@@ -24,98 +24,85 @@
 
 using Poco::ByteOrder;
 
-
 class OutputMetadataImpl
-:
-	private Uncopyable
+	: private Uncopyable
 {
 	friend class OutputMetadata;
 
 private:
 	OutputMetadataImpl(
 		time_t length,
-		const std::string& title,
-		const std::string& album,
-		const std::string& artist,
-		const buffer_t   & artworkData,
-		const std::string& artworkType,
-		const shorts_t   & playlistPos);
+		const std::string &title,
+		const std::string &album,
+		const std::string &artist,
+		const buffer_t &artworkData,
+		const std::string &artworkType,
+		const shorts_t &playlistPos);
 	~OutputMetadataImpl();
 
 	time_t _length;
 	std::string _title;
 	std::string _album;
 	std::string _artist;
-	buffer_t    _artworkData;
+	buffer_t _artworkData;
 	std::string _artworkType;
-	shorts_t    _playlistPos;
+	shorts_t _playlistPos;
 };
-
 
 OutputMetadataImpl::OutputMetadataImpl(
 	const time_t length,
-	const std::string& title,
-	const std::string& album,
-	const std::string& artist,
-	const buffer_t   & artworkData,
-	const std::string& artworkType,
-	const shorts_t   & playlistPos)
-:
-	_length(length),
-	_title(title),
-	_album(album),
-	_artist(artist),
-	_artworkData(artworkData),
-	_artworkType(artworkType),
-	_playlistPos(playlistPos)
+	const std::string &title,
+	const std::string &album,
+	const std::string &artist,
+	const buffer_t &artworkData,
+	const std::string &artworkType,
+	const shorts_t &playlistPos)
+	: _length(length),
+	  _title(title),
+	  _album(album),
+	  _artist(artist),
+	  _artworkData(artworkData),
+	  _artworkType(artworkType),
+	  _playlistPos(playlistPos)
 {
 }
-
 
 OutputMetadataImpl::~OutputMetadataImpl()
 {
 }
 
-
 //------------------------------------------------------------------------------
-
 
 OutputMetadata::OutputMetadata(
 	const time_t length,
-	const std::string& title,
-	const std::string& album,
-	const std::string& artist,
-	const shorts_t   & listpos,
-	const buffer_t   & artworkData,
-	const std::string& artworkType)
-:
-	_impl(new OutputMetadataImpl(length, title, artist, album, artworkData, artworkType, listpos))
+	const std::string &title,
+	const std::string &album,
+	const std::string &artist,
+	const shorts_t &listpos,
+	const buffer_t &artworkData,
+	const std::string &artworkType)
+	: _impl(new OutputMetadataImpl(length, title, artist, album, artworkData, artworkType, listpos))
 {
 }
 
-
-OutputMetadata::OutputMetadata(const OutputMetadata& that)
-:
-	_impl(new OutputMetadataImpl(
-		that.length(),
-		that.title(),
-		that.album(),
-		that.artist(),
-		that.artworkData(),
-		that.artworkType(),
-		that.playlistPos())
-	)
+OutputMetadata::OutputMetadata(const OutputMetadata &that)
+	: _impl(new OutputMetadataImpl(
+		  that.length(),
+		  that.title(),
+		  that.album(),
+		  that.artist(),
+		  that.artworkData(),
+		  that.artworkType(),
+		  that.playlistPos()))
 {
 }
-
 
 OutputMetadata::~OutputMetadata()
 {
 	delete _impl;
 }
 
-
-OutputMetadata& OutputMetadata::operator =(const OutputMetadata& that)
+OutputMetadata &OutputMetadata::operator=(const OutputMetadata &that)
 {
 	_impl->_length = that.length();
 	_impl->_title = that.title();
@@ -128,41 +115,33 @@ OutputMetadata& OutputMetadata::operator =(const OutputMetadata& that)
 	return *this;
 }
 
-
 time_t OutputMetadata::length() const
 {
 	return _impl->_length;
 }
 
-
-const std::string& OutputMetadata::title() const
+const std::string &OutputMetadata::title() const
 {
 	return _impl->_title;
 }
 
-
-const std::string& OutputMetadata::album() const
+const std::string &OutputMetadata::album() const
 {
 	return _impl->_album;
 }
 
-
-const std::string& OutputMetadata::artist() const
+const std::string &OutputMetadata::artist() const
 {
 	return _impl->_artist;
 }
 
-
-const buffer_t& OutputMetadata::artworkData() const
+const buffer_t &OutputMetadata::artworkData() const
 {
 	return _impl->_artworkData;
 }
 
-
-	#define read_and_shorten(pos, size, endian) short(std::min(                 \
-		static_cast<const uint##size##_t>(std::numeric_limits<short>::max()),   \
-		ByteOrder::from##endian(*reinterpret_cast<const uint##size##_t*>(&pos))))
-
+#define read_and_shorten(pos, size, endian) short((std::min)(static_cast<const uint##size##_t>((std::numeric_limits<short>::max)()), \
+															 ByteOrder::from##endian(*reinterpret_cast<const uint##size##_t *>(&pos))))
 
 shorts_t OutputMetadata::artworkDims() const
 {
@@ -175,15 +154,17 @@ shorts_t OutputMetadata::artworkDims() const
 	if (artworkType() == "image/jpeg")
 	{
 		size_t i = 0, n = artworkData().size();
-		const byte_t * jpg = &artworkData()[0];
+		const byte_t *jpg = &artworkData()[0];
 		if (jpg[i++] == 0xff && jpg[i++] == 0xd8)
 		{
 		next:
-			while (jpg[i++] != 0xff && i < n) ;
-			while (jpg[i++] == 0xff && i < n) ;
+			while (jpg[i++] != 0xff && i < n)
+				;
+			while (jpg[i++] == 0xff && i < n)
+				;
 
 			short len = read_and_shorten(jpg[i], 16, BigEndian);
-			switch (jpg[i-1])
+			switch (jpg[i - 1])
 			{
 			case 0xc0:
 			case 0xc1:
@@ -198,13 +179,15 @@ shorts_t OutputMetadata::artworkDims() const
 			case 0xcd:
 			case 0xce:
 			case 0xcf:
-				if (len > 7) {
-					height = read_and_shorten(jpg[i+3], 16, BigEndian);
-					width  = read_and_shorten(jpg[i+5], 16, BigEndian);
+				if (len > 7)
+				{
+					height = read_and_shorten(jpg[i + 3], 16, BigEndian);
+					width = read_and_shorten(jpg[i + 5], 16, BigEndian);
 					break;
 				}
 			default:
-				if (len > 0) {
+				if (len > 0)
+				{
 					i += len;
 					goto next;
 				}
@@ -213,38 +196,36 @@ shorts_t OutputMetadata::artworkDims() const
 	}
 	if (artworkType() == "image/png")
 	{
-		const buffer_t& png = artworkData();
+		const buffer_t &png = artworkData();
 		if (png.size() > 32)
 		{
-			width  = read_and_shorten(png[16], 32, BigEndian);
+			width = read_and_shorten(png[16], 32, BigEndian);
 			height = read_and_shorten(png[20], 32, BigEndian);
 		}
 	}
 	if (artworkType() == "image/gif")
 	{
-		const buffer_t& gif = artworkData();
+		const buffer_t &gif = artworkData();
 		if (gif.size() > 8)
 		{
-			const std::string format((char*) &gif[0], 6);
+			const std::string format((char *)&gif[0], 6);
 			if (format == "GIF87a" || format == "GIF89a")
 			{
-				width  = read_and_shorten(gif[6], 16, LittleEndian);
+				width = read_and_shorten(gif[6], 16, LittleEndian);
 				height = read_and_shorten(gif[8], 16, LittleEndian);
 			}
 		}
 	}
 
-	return std::make_pair(width,height);
+	return std::make_pair(width, height);
 }
 
-
-const std::string& OutputMetadata::artworkType() const
+const std::string &OutputMetadata::artworkType() const
 {
 	return _impl->_artworkType;
 }
 
-
-const shorts_t& OutputMetadata::playlistPos() const
+const shorts_t &OutputMetadata::playlistPos() const
 {
 	return _impl->_playlistPos;
 }

@@ -14,6 +14,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996) // OpenSSL deprecation
+#endif
+
 #include "Debugger.h"
 #include "Platform.h"
 #include "Random.h"
@@ -40,33 +44,25 @@
 #include <Poco/Format.h>
 #include <Poco/Net/IPAddress.h>
 
-
-//#define TARGET_OS_WIN32
+// #define TARGET_OS_WIN32
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable:4146)
-#pragma warning(disable:4244)
-#pragma warning(disable:4805)
+#pragma warning(disable : 4996) // OpenSSL deprecation
+#pragma warning(disable : 4146)
+#pragma warning(disable : 4244)
+#pragma warning(disable : 4805)
 #endif
-#include "ag_dec.c"
-#include "ag_enc.c"
-#include "dp_enc.c"
-#include "matrix_enc.c"
-#include <ALACBitUtilities.c>
-#include <EndianPortable.c>
-#include <ALACEncoder.cpp>
+#include "ALACEncoder.h"
 #pragma warning(pop)
 #undef TARGET_OS_WIN32
-
 
 using Poco::ByteOrder;
 using Poco::Thread;
 using Poco::Timestamp;
 using Poco::Net::DatagramSocket;
 using Poco::Net::IPAddress;
-using Poco::Net::SocketAddress;
 using Poco::Net::ReadableNotification;
-
+using Poco::Net::SocketAddress;
 
 // default ports to use for RTP control and timing
 static const uint16_t LOCAL_CONTROL_PORT = 6001;
@@ -124,11 +120,9 @@ static inline AudioFormatDescription alac_out_format()
 static const AudioFormatDescription ALAC_IN_FORMAT(alac_in_format());
 static const AudioFormatDescription ALAC_OUT_FORMAT(alac_out_format());
 
-
 //------------------------------------------------------------------------------
 
-
-static void bindToNextAvailablePort(DatagramSocket& socket, uint16_t port)
+static void bindToNextAvailablePort(DatagramSocket &socket, uint16_t port)
 {
 	assert(port > 0);
 
@@ -147,8 +141,7 @@ static void bindToNextAvailablePort(DatagramSocket& socket, uint16_t port)
 		{
 			port += 1;
 		}
-	}
-	while (!done && port > 0);
+	} while (!done && port > 0);
 
 	if (port == 0)
 	{
@@ -156,9 +149,8 @@ static void bindToNextAvailablePort(DatagramSocket& socket, uint16_t port)
 	}
 }
 
-
-static void sendTo(DatagramSocket& socket, const SocketAddress& address,
-	const void* const buffer, const size_t length)
+static void sendTo(DatagramSocket &socket, const SocketAddress &address,
+				   const void *const buffer, const size_t length)
 {
 	assert(buffer != NULL && length > 0);
 
@@ -170,17 +162,14 @@ static void sendTo(DatagramSocket& socket, const SocketAddress& address,
 	}
 }
 
-
 //------------------------------------------------------------------------------
 
-
-const OutputFormat& RAOPEngine::outputFormat()
+const OutputFormat &RAOPEngine::outputFormat()
 {
 	static const OutputFormat format(SampleRate(RAOP_SAMPLES_PER_SECOND),
-		SampleSize(RAOP_BITS_PER_SAMPLE / 8), ChannelCount(RAOP_CHANNEL_COUNT));
+									 SampleSize(RAOP_BITS_PER_SAMPLE / 8), ChannelCount(RAOP_CHANNEL_COUNT));
 	return format;
 }
-
 
 int64_t RAOPEngine::samplesToMicroseconds(const int64_t samples)
 {
@@ -189,7 +178,6 @@ int64_t RAOPEngine::samplesToMicroseconds(const int64_t samples)
 	return ((samples * MICROSECONDS_PER_SECOND) / RAOP_SAMPLES_PER_SECOND);
 }
 
-
 int32_t RAOPEngine::samplesToMilliseconds(const int64_t samples)
 {
 	static const int64_t MILLISECONDS_PER_SECOND = 1000;
@@ -197,21 +185,18 @@ int32_t RAOPEngine::samplesToMilliseconds(const int64_t samples)
 	return static_cast<int32_t>((samples * MILLISECONDS_PER_SECOND) / RAOP_SAMPLES_PER_SECOND);
 }
 
-
 //------------------------------------------------------------------------------
 
-
-RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
-:
-	_aesIV(16),
-	_audioLatency(11025),
-	_outputObserver(outputObserver),
-	_rtpDataSecured(RAOP_PACKET_MAX_SIZE, PACKET_BUFFER_COUNT, PACKET_MEMORY_COUNT),
-	_rtpDataUnsecured(RAOP_PACKET_MAX_SIZE, PACKET_BUFFER_COUNT, PACKET_MEMORY_COUNT),
-	_controlRequestHandler(*this, &RAOPEngine::handleControlRequest),
-	_timingRequestHandler(*this, &RAOPEngine::handleTimingRequest),
-	_reactorThread("RAOPEngine.SocketReactor::run"),
-	_senderThread("RAOPEngine::run")
+RAOPEngine::RAOPEngine(OutputObserver &outputObserver)
+	: _aesIV(16),
+	  _audioLatency(11025),
+	  _outputObserver(outputObserver),
+	  _rtpDataSecured(RAOP_PACKET_MAX_SIZE, PACKET_BUFFER_COUNT, PACKET_MEMORY_COUNT),
+	  _rtpDataUnsecured(RAOP_PACKET_MAX_SIZE, PACKET_BUFFER_COUNT, PACKET_MEMORY_COUNT),
+	  _controlRequestHandler(*this, &RAOPEngine::handleControlRequest),
+	  _timingRequestHandler(*this, &RAOPEngine::handleTimingRequest),
+	  _reactorThread("RAOPEngine.SocketReactor::run"),
+	  _senderThread("RAOPEngine::run")
 {
 	// seed random number generator
 	Random::seed(static_cast<unsigned int>(std::time(NULL)));
@@ -231,10 +216,10 @@ RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
 	// base64 decode AirPort Express public key modulus and exponent
 	buffer_t n(258);
 	const int nLength = EVP_DecodeBlock(
-		(unsigned char*) &n[0],
-		(unsigned char*) modulus.c_str(),
-		(int) modulus.length());
-	if (nLength <= 0 || nLength > (int) n.size())
+		(unsigned char *)&n[0],
+		(unsigned char *)modulus.c_str(),
+		(int)modulus.length());
+	if (nLength <= 0 || nLength > (int)n.size())
 	{
 		throw std::runtime_error("EVP_DecodeBlock failed");
 	}
@@ -245,10 +230,10 @@ RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
 
 	buffer_t e(3);
 	const int eLength = EVP_DecodeBlock(
-		(unsigned char*) &e[0],
-		(unsigned char*) exponent.c_str(),
-		(int) exponent.length());
-	if (eLength <= 0 || eLength > (int) e.size())
+		(unsigned char *)&e[0],
+		(unsigned char *)exponent.c_str(),
+		(int)exponent.length());
+	if (eLength <= 0 || eLength > (int)e.size())
 	{
 		throw std::runtime_error("EVP_DecodeBlock failed");
 	}
@@ -265,16 +250,17 @@ RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
 	}
 
 	// fill public key components
-	_rsaKey->n = BN_bin2bn(&n[0], n.size(), _rsaKey->n);
-	_rsaKey->e = BN_bin2bn(&e[0], e.size(), _rsaKey->e);
+	BIGNUM *bn_n = BN_bin2bn(&n[0], n.size(), NULL);
+	BIGNUM *bn_e = BN_bin2bn(&e[0], e.size(), NULL);
+	RSA_set0_key(_rsaKey.get(), bn_n, bn_e, NULL);
 
 	// clear private key components
-	_rsaKey->d = NULL;
-	_rsaKey->p = NULL;
-	_rsaKey->q = NULL;
-	_rsaKey->dmp1 = NULL;
-	_rsaKey->dmq1 = NULL;
-	_rsaKey->iqmp = NULL;
+	// _rsaKey->d = NULL;
+	// _rsaKey->p = NULL;
+	// _rsaKey->q = NULL;
+	// _rsaKey->dmp1 = NULL;
+	// _rsaKey->dmq1 = NULL;
+	// _rsaKey->iqmp = NULL;
 
 	// reduce time to send by disabling blocking
 	_controlSocket.setBlocking(false);
@@ -288,8 +274,8 @@ RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
 	_dataSocket.impl()->ioctl(SIO_UDP_CONNRESET, &flg);
 
 	// reduce packet loss by increasing send buffer sizes
-	_controlSocket.setSendBufferSize(2 *_controlSocket.getSendBufferSize());
-	_dataSocket.setSendBufferSize(8 *_dataSocket.getSendBufferSize());
+	_controlSocket.setSendBufferSize(2 * _controlSocket.getSendBufferSize());
+	_dataSocket.setSendBufferSize(8 * _dataSocket.getSendBufferSize());
 
 	// enable processing of incoming control and timing messages
 	bindToNextAvailablePort(_controlSocket, LOCAL_CONTROL_PORT);
@@ -298,7 +284,6 @@ RAOPEngine::RAOPEngine(OutputObserver& outputObserver)
 	_socketReactor.addEventHandler(_timingSocket, _timingRequestHandler);
 	_reactorThread.start(_socketReactor);
 }
-
 
 RAOPEngine::~RAOPEngine()
 {
@@ -318,8 +303,7 @@ RAOPEngine::~RAOPEngine()
 	CATCH_ALL
 }
 
-
-void RAOPEngine::reinit(OutputInterval& outputInterval)
+void RAOPEngine::reinit(OutputInterval &outputInterval)
 {
 	// stop sending data and sync packets
 	stop();
@@ -340,11 +324,11 @@ void RAOPEngine::reinit(OutputInterval& outputInterval)
 	// RSA encrypt AES key
 	buffer_t encryptedKey(RSA_size(rsaKey()));
 	const int encryptedKeyLength = RSA_public_encrypt(
-		(int) key.size(),
-		(unsigned char*) &key[0],
-		(unsigned char*) &encryptedKey[0],
+		(int)key.size(),
+		(unsigned char *)&key[0],
+		(unsigned char *)&encryptedKey[0],
 		rsaKey(), RSA_PKCS1_OAEP_PADDING);
-	if (encryptedKeyLength <= 0 || encryptedKeyLength > (int) encryptedKey.size())
+	if (encryptedKeyLength <= 0 || encryptedKeyLength > (int)encryptedKey.size())
 	{
 		throw std::runtime_error("RSA_public_encrypt failed");
 	}
@@ -352,10 +336,10 @@ void RAOPEngine::reinit(OutputInterval& outputInterval)
 	// base64 encode RSA-encrypted AES key
 	std::vector<char> encodedKey(384);
 	const int encodedKeyLength = EVP_EncodeBlock(
-		(unsigned char*) &encodedKey[0],
-		(unsigned char*) &encryptedKey[0],
+		(unsigned char *)&encodedKey[0],
+		(unsigned char *)&encryptedKey[0],
 		encryptedKeyLength);
-	if (encodedKeyLength <= 0 || encodedKeyLength > (int) encodedKey.size())
+	if (encodedKeyLength <= 0 || encodedKeyLength > (int)encodedKey.size())
 	{
 		throw std::runtime_error("EVP_EncodeBlock failed");
 	}
@@ -374,10 +358,10 @@ void RAOPEngine::reinit(OutputInterval& outputInterval)
 	// base64 encode AES initialization vector
 	std::vector<char> encodedIV(32);
 	const int encodedIVLength = EVP_EncodeBlock(
-		(unsigned char*) &encodedIV[0],
-		(unsigned char*) &_aesIV[0],
-		(int) _aesIV.size());
-	if (encodedIVLength <= 0 || encodedIVLength > (int) encodedIV.size())
+		(unsigned char *)&encodedIV[0],
+		(unsigned char *)&_aesIV[0],
+		(int)_aesIV.size());
+	if (encodedIVLength <= 0 || encodedIVLength > (int)encodedIV.size())
 	{
 		throw std::runtime_error("EVP_EncodeBlock failed");
 	}
@@ -405,13 +389,13 @@ void RAOPEngine::reinit(OutputInterval& outputInterval)
 		if (rtpTime > _rtpTimeIncoming)
 		{
 			const uint32_t delta = (rtpTime - _rtpTimeIncoming);
-			outputInterval.first  += delta;
+			outputInterval.first += delta;
 			outputInterval.second += delta;
 		}
 		else
 		{
 			const uint32_t delta = (_rtpTimeIncoming - rtpTime);
-			outputInterval.first  -= delta;
+			outputInterval.first -= delta;
 			outputInterval.second -= delta;
 		}
 	}
@@ -435,14 +419,13 @@ void RAOPEngine::reinit(OutputInterval& outputInterval)
 	assert(result == 0);
 }
 
-
 OutputInterval RAOPEngine::getOutputInterval(const time_t length, const time_t offset) const
 {
 	assert(length >= 0 && offset >= 0);
 
 	// convert length and offset to RTP timestamps relative to incoming RTP time
 	const uint64_t rtpTime = static_cast<uint64_t>(_rtpTimeIncoming);
-	const uint64_t maxTime = static_cast<uint64_t>(std::numeric_limits<uint32_t>::max());
+	const uint64_t maxTime = static_cast<uint64_t>((std::numeric_limits<uint32_t>::max)());
 
 	const uint64_t lengthSamples =
 		(length * static_cast<uint64_t>(RAOP_SAMPLES_PER_SECOND)) / 1000;
@@ -457,20 +440,17 @@ OutputInterval RAOPEngine::getOutputInterval(const time_t length, const time_t o
 	return OutputInterval(beg, end);
 }
 
-
 uint16_t RAOPEngine::controlPort() const
 {
 	return _controlSocket.address().port();
 }
-
 
 uint16_t RAOPEngine::timingPort() const
 {
 	return _timingSocket.address().port();
 }
 
-
-time_t RAOPEngine::latency(const OutputFormat& format) const
+time_t RAOPEngine::latency(const OutputFormat &format) const
 {
 	if (!(format == outputFormat()))
 	{
@@ -484,12 +464,10 @@ time_t RAOPEngine::latency(const OutputFormat& format) const
 	return (bufferLatency + deviceLatency);
 }
 
-
 size_t RAOPEngine::buffered() const
 {
 	return 0;
 }
-
 
 size_t RAOPEngine::canWrite() const
 {
@@ -498,8 +476,7 @@ size_t RAOPEngine::canWrite() const
 	return (!_raopDevices.empty() && _rtpDataSecured.canWrite() ? RAOP_PACKET_MAX_DATA_SIZE : 0);
 }
 
-
-void RAOPEngine::write(const byte_t* buffer, size_t length)
+void RAOPEngine::write(const byte_t *buffer, size_t length)
 {
 	if (buffer == NULL || length == 0 || length > RAOP_PACKET_MAX_DATA_SIZE)
 	{
@@ -509,8 +486,8 @@ void RAOPEngine::write(const byte_t* buffer, size_t length)
 
 	ScopedLock lock(_mutex);
 
-	PacketBuffer::Slot& sslotRef = _rtpDataSecured.nextAvailable();
-	PacketBuffer::Slot& uslotRef = _rtpDataUnsecured.nextAvailable();
+	PacketBuffer::Slot &sslotRef = _rtpDataSecured.nextAvailable();
+	PacketBuffer::Slot &uslotRef = _rtpDataUnsecured.nextAvailable();
 	sslotRef.originalSize = uslotRef.originalSize = length;
 
 	DataPacketHeader packetHeader;
@@ -523,31 +500,31 @@ void RAOPEngine::write(const byte_t* buffer, size_t length)
 
 	std::memcpy(sslotRef.packetData, &packetHeader, RTP_DATA_HEADER_SIZE);
 	std::memcpy(uslotRef.packetData, &packetHeader, RTP_DATA_HEADER_SIZE);
-	byte_t* const securedPacketPtr = &sslotRef.packetData[RTP_DATA_HEADER_SIZE];
-	byte_t* const unsecuredPacketPtr = &uslotRef.packetData[RTP_DATA_HEADER_SIZE];
+	byte_t *const securedPacketPtr = &sslotRef.packetData[RTP_DATA_HEADER_SIZE];
+	byte_t *const unsecuredPacketPtr = &uslotRef.packetData[RTP_DATA_HEADER_SIZE];
 
 	std::shared_ptr<void> buf;
 	if (length < RAOP_PACKET_MAX_DATA_SIZE)
 	{
 		Debugger::printf("Recovering from %i-byte audio segment by padding it with %i bytes (%.3f ms) of silence.",
-			length, RAOP_PACKET_MAX_DATA_SIZE - length, samplesToMicroseconds((RAOP_PACKET_MAX_DATA_SIZE - length) / 4) * 0.001f);
+						 length, RAOP_PACKET_MAX_DATA_SIZE - length, samplesToMicroseconds((RAOP_PACKET_MAX_DATA_SIZE - length) / 4) * 0.001f);
 
 		buf.reset(std::calloc(1, RAOP_PACKET_MAX_DATA_SIZE), std::free);
 		std::memcpy(buf.get(), buffer, length);
 
-		buffer = (const byte_t*) buf.get();
+		buffer = (const byte_t *)buf.get();
 		length = RAOP_PACKET_MAX_DATA_SIZE;
 	}
 
 	// fill in unsecured packet payload with encoded audio data
 	int32_t dataLength = length;
-	_alacEncoder->Encode(ALAC_IN_FORMAT, ALAC_OUT_FORMAT, (byte_t*) buffer, unsecuredPacketPtr, &dataLength);
+	_alacEncoder->Encode(ALAC_IN_FORMAT, ALAC_OUT_FORMAT, (byte_t *)buffer, unsecuredPacketPtr, &dataLength);
 	assert(dataLength > 0 && dataLength <= (RAOP_PACKET_MAX_SIZE - RTP_DATA_HEADER_SIZE)); // check for overrun
 
 	sslotRef.payloadSize = uslotRef.payloadSize = dataLength;
 	sslotRef.packetSize = uslotRef.packetSize = RTP_DATA_HEADER_SIZE + dataLength;
 	const size_t frameSize = (RAOP_CHANNEL_COUNT * (RAOP_BITS_PER_SAMPLE / 8));
-	assert((length / frameSize) <= std::numeric_limits<uint16_t>::max());
+	assert((length / frameSize) <= (std::numeric_limits<uint16_t>::max)());
 	sslotRef.frameCount = uslotRef.frameCount = uint16_t(length / frameSize);
 
 	// make copy of initialization vector because it gets modified
@@ -581,15 +558,13 @@ void RAOPEngine::write(const byte_t* buffer, size_t length)
 	}
 }
 
-
-	struct isClosedOrUnresponsive
+struct isClosedOrUnresponsive
+{
+	bool operator()(const RAOPDevice *const device)
 	{
-		bool operator ()(const RAOPDevice* const device)
-		{
-			return !device->isOpen();
-		}
-	};
-
+		return !device->isOpen();
+	}
+};
 
 void RAOPEngine::flush()
 {
@@ -598,7 +573,6 @@ void RAOPEngine::flush()
 	// remove closed devices from the list
 	_raopDevices.remove_if(isClosedOrUnresponsive());
 }
-
 
 void RAOPEngine::reset()
 {
@@ -613,9 +587,9 @@ void RAOPEngine::reset()
 
 	// try to flush each device's playback buffer
 	for (RAOPDeviceList::const_iterator it = _raopDevices.begin();
-		it != _raopDevices.end(); ++it)
+		 it != _raopDevices.end(); ++it)
 	{
-		RAOPDevice& raopDevice = **it;
+		RAOPDevice &raopDevice = **it;
 
 		try
 		{
@@ -640,8 +614,7 @@ void RAOPEngine::reset()
 	_samplesWritten = 0;
 }
 
-
-void RAOPEngine::attach(RAOPDevice* const raopDevice)
+void RAOPEngine::attach(RAOPDevice *const raopDevice)
 {
 	ScopedLock lock(_mutex);
 
@@ -656,8 +629,7 @@ void RAOPEngine::attach(RAOPDevice* const raopDevice)
 	}
 }
 
-
-void RAOPEngine::detach(RAOPDevice* const raopDevice)
+void RAOPEngine::detach(RAOPDevice *const raopDevice)
 {
 	ScopedLockWithUnlock lock(_mutex);
 
@@ -672,7 +644,6 @@ void RAOPEngine::detach(RAOPDevice* const raopDevice)
 	}
 }
 
-
 void RAOPEngine::start()
 {
 	_stopSending = false;
@@ -680,13 +651,11 @@ void RAOPEngine::start()
 	_senderThread.setOSPriority(THREAD_PRIORITY_ABOVE_NORMAL);
 }
 
-
 void RAOPEngine::stop()
 {
 	_stopSending = true;
 	_senderThread.join();
 }
-
 
 void RAOPEngine::run()
 {
@@ -705,8 +674,7 @@ void RAOPEngine::run()
 			}
 
 			// send data packet whenever system time meets or exceeds stream time
-			if (!_raopDevices.empty() && _rtpSeqNumIncoming != _rtpSeqNumOutgoing
-				&& (currentTime - _firstDataTime) >= samplesToMicroseconds(_samplesWritten))
+			if (!_raopDevices.empty() && _rtpSeqNumIncoming != _rtpSeqNumOutgoing && (currentTime - _firstDataTime) >= samplesToMicroseconds(_samplesWritten))
 			{
 				const size_t dataLength = sendDataPacket(currentTime);
 
@@ -728,39 +696,38 @@ void RAOPEngine::run()
 	}
 }
 
-
-size_t RAOPEngine::sendDataPacket(const Timestamp& currentTime)
+size_t RAOPEngine::sendDataPacket(const Timestamp &currentTime)
 {
-	PacketBuffer::Slot& sslotRef = _rtpDataSecured.nextBuffered();
-	PacketBuffer::Slot& uslotRef = _rtpDataUnsecured.nextBuffered();
+	PacketBuffer::Slot &sslotRef = _rtpDataSecured.nextBuffered();
+	PacketBuffer::Slot &uslotRef = _rtpDataUnsecured.nextBuffered();
 
-	const DataPacketHeader& packetHeader =
-		*reinterpret_cast<DataPacketHeader*>(sslotRef.packetData);
+	const DataPacketHeader &packetHeader =
+		*reinterpret_cast<DataPacketHeader *>(sslotRef.packetData);
 
 	// send data packet to each device
 	for (RAOPDeviceList::const_iterator it = _raopDevices.begin();
-		it != _raopDevices.end(); ++it)
+		 it != _raopDevices.end(); ++it)
 	{
-		RAOPDevice& raopDevice = **it;
+		RAOPDevice &raopDevice = **it;
 
 		try
 		{
 			if (raopDevice.isOpen())
 			{
 				sendTo(_dataSocket,
-					raopDevice.audioSocketAddr(),
-					raopDevice.secureDataStream()
-						? sslotRef.packetData
-						: uslotRef.packetData,
-					sslotRef.packetSize);
+					   raopDevice.audioSocketAddr(),
+					   raopDevice.secureDataStream()
+						   ? sslotRef.packetData
+						   : uslotRef.packetData,
+					   sslotRef.packetSize);
 			}
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &ex)
 		{
 			Debugger::printException(ex, Poco::format(
-				"Sending data packet %hu to %s",
-				ByteOrder::fromNetwork(packetHeader.seqNum),
-				raopDevice.audioSocketAddr().toString()));
+											 "Sending data packet %hu to %s",
+											 ByteOrder::fromNetwork(packetHeader.seqNum),
+											 raopDevice.audioSocketAddr().toString()));
 		}
 	}
 
@@ -778,8 +745,7 @@ size_t RAOPEngine::sendDataPacket(const Timestamp& currentTime)
 	return sslotRef.originalSize;
 }
 
-
-void RAOPEngine::sendSyncPacket(const Timestamp& currentTime)
+void RAOPEngine::sendSyncPacket(const Timestamp &currentTime)
 {
 	SyncPacket syncPacket;
 	syncPacket.setMarker();
@@ -793,24 +759,24 @@ void RAOPEngine::sendSyncPacket(const Timestamp& currentTime)
 
 	// send sync packet to each device
 	for (RAOPDeviceList::const_iterator it = _raopDevices.begin();
-		it != _raopDevices.end(); ++it)
+		 it != _raopDevices.end(); ++it)
 	{
-		RAOPDevice& raopDevice = **it;
+		RAOPDevice &raopDevice = **it;
 
 		try
 		{
 			if (raopDevice.isOpen())
 			{
 				sendTo(_controlSocket,
-					raopDevice.controlSocketAddr(),
-					&syncPacket, RTP_SYNC_PACKET_SIZE);
+					   raopDevice.controlSocketAddr(),
+					   &syncPacket, RTP_SYNC_PACKET_SIZE);
 			}
 		}
-		catch (const std::exception& ex)
+		catch (const std::exception &ex)
 		{
 			Debugger::printException(ex, Poco::format(
-				"Sending sync packet to %s",
-				raopDevice.controlSocketAddr().toString()));
+											 "Sending sync packet to %s",
+											 raopDevice.controlSocketAddr().toString()));
 		}
 	}
 
@@ -818,8 +784,7 @@ void RAOPEngine::sendSyncPacket(const Timestamp& currentTime)
 	_lastStreamSyncTime = currentTime;
 }
 
-
-void RAOPEngine::handleTimingRequest(ReadableNotification*)
+void RAOPEngine::handleTimingRequest(ReadableNotification *)
 {
 	try
 	{
@@ -866,15 +831,13 @@ void RAOPEngine::handleTimingRequest(ReadableNotification*)
 				const Timestamp::TimeDiff localRecvRemoteSendTimeDiff =
 					currentTime - request.sendTime;
 
-				if (_abs64(currentRecvLastRecvTimeDiff) > 3333000LL
-					|| (_abs64(localRecvRemoteSendTimeDiff) > 250000LL
-						&& _abs64(localRecvRemoteSendTimeDiff) < 10000000LL))
+				if (_abs64(currentRecvLastRecvTimeDiff) > 3333000LL || (_abs64(localRecvRemoteSendTimeDiff) > 250000LL && _abs64(localRecvRemoteSendTimeDiff) < 10000000LL))
 				{
 					Debugger::printf("Timing request: "
-						"time between requests = %8.3f ms; "
-						"local recv time - remote send time = %7.3f ms.",
-						static_cast<double>(currentRecvLastRecvTimeDiff) / 1000.0,
-						static_cast<double>(localRecvRemoteSendTimeDiff) / 1000.0);
+									 "time between requests = %8.3f ms; "
+									 "local recv time - remote send time = %7.3f ms.",
+									 static_cast<double>(currentRecvLastRecvTimeDiff) / 1000.0,
+									 static_cast<double>(localRecvRemoteSendTimeDiff) / 1000.0);
 				}
 			}
 			_lastClockSyncTime = currentTime;
@@ -888,8 +851,7 @@ void RAOPEngine::handleTimingRequest(ReadableNotification*)
 	CATCH_ALL
 }
 
-
-void RAOPEngine::handleControlRequest(ReadableNotification*)
+void RAOPEngine::handleControlRequest(ReadableNotification *)
 {
 	try
 	{
@@ -927,9 +889,8 @@ void RAOPEngine::handleControlRequest(ReadableNotification*)
 	CATCH_ALL
 }
 
-
-void RAOPEngine::handleResendRequest(ResendRequestPacket& request,
-	const SocketAddress& requestorAddress)
+void RAOPEngine::handleResendRequest(ResendRequestPacket &request,
+									 const SocketAddress &requestorAddress)
 {
 	Debugger::printf(
 		"Resend requested by %s for %hu packet(s) starting at sequence number %hu.",
@@ -938,27 +899,25 @@ void RAOPEngine::handleResendRequest(ResendRequestPacket& request,
 	ScopedLock lock(_mutex);
 
 	uint16_t missedPktAge = (request.missedSeqNum <= _rtpSeqNumOutgoing
-		? _rtpSeqNumOutgoing - request.missedSeqNum
-		: _rtpSeqNumOutgoing + (std::numeric_limits<uint16_t>::max() - request.missedSeqNum) + 1);
+								 ? _rtpSeqNumOutgoing - request.missedSeqNum
+								 : _rtpSeqNumOutgoing + ((std::numeric_limits<uint16_t>::max)() - request.missedSeqNum) + 1);
 
 	if (missedPktAge < 1 || missedPktAge > PACKET_MEMORY_COUNT)
 	{
 		Debugger::printf("Requested packet(s) too old to resend; "
-			"only the last %hu sent packets are kept.", PACKET_MEMORY_COUNT);
+						 "only the last %hu sent packets are kept.",
+						 PACKET_MEMORY_COUNT);
 		return;
 	}
 
 	// determine which device is the requestor
-	RAOPDevice* requestor = NULL;
+	RAOPDevice *requestor = NULL;
 	for (RAOPDeviceList::const_iterator it = _raopDevices.begin();
-		it != _raopDevices.end(); ++it)
+		 it != _raopDevices.end(); ++it)
 	{
-		const RAOPDevice& raopDevice = **it;
+		const RAOPDevice &raopDevice = **it;
 
-		if (raopDevice.controlSocketAddr().host() == requestorAddress.host()
-			&& (raopDevice.controlSocketAddr().port() == requestorAddress.port()
-				|| raopDevice.audioSocketAddr().port() == requestorAddress.port()
-				|| raopDevice.audioSocketAddr().port()+1 == requestorAddress.port()))
+		if (raopDevice.controlSocketAddr().host() == requestorAddress.host() && (raopDevice.controlSocketAddr().port() == requestorAddress.port() || raopDevice.audioSocketAddr().port() == requestorAddress.port() || raopDevice.audioSocketAddr().port() + 1 == requestorAddress.port()))
 		{
 			requestor = *it;
 			break;
@@ -968,35 +927,36 @@ void RAOPEngine::handleResendRequest(ResendRequestPacket& request,
 	if (requestor == NULL)
 	{
 		Debugger::printf("Requestor %s not found in list of devices.",
-			requestorAddress.toString().c_str());
+						 requestorAddress.toString().c_str());
 		return;
 	}
 	else if (!requestor->isOpen())
 	{
 		Debugger::printf("Requestor %s no longer open for playback.",
-			requestorAddress.toString().c_str());
+						 requestorAddress.toString().c_str());
 		return;
 	}
 
 	// obtain reference to correct packet stream for requesting device
-	const PacketBuffer& rtpData =
+	const PacketBuffer &rtpData =
 		(requestor->secureDataStream() ? _rtpDataSecured : _rtpDataUnsecured);
 
-	RTPPacketHeader header;  header.setMarker();
+	RTPPacketHeader header;
+	header.setMarker();
 	header.setPayloadType(PAYLOAD_TYPE_RESEND_RESPONSE);
 	buffer_t response(RTP_BASE_HEADER_SIZE + RAOP_PACKET_MAX_SIZE);
 
 	while (request.missedPktCnt > 0)
 	{
-		const PacketBuffer::Slot& slotRef = rtpData.prevBuffered(missedPktAge);
+		const PacketBuffer::Slot &slotRef = rtpData.prevBuffered(missedPktAge);
 
 		const uint16_t dataPacketSeqNum = ByteOrder::fromNetwork(
-			reinterpret_cast<const DataPacketHeader*>(slotRef.packetData)->seqNum);
+			reinterpret_cast<const DataPacketHeader *>(slotRef.packetData)->seqNum);
 		if (request.missedSeqNum != dataPacketSeqNum)
 		{
 			Debugger::printf("Data packet with sequence number %hu was not found"
-				" at anticipated position in packet history; %hu was in its place.",
-				request.missedSeqNum, dataPacketSeqNum);
+							 " at anticipated position in packet history; %hu was in its place.",
+							 request.missedSeqNum, dataPacketSeqNum);
 			return;
 		}
 
@@ -1004,13 +964,13 @@ void RAOPEngine::handleResendRequest(ResendRequestPacket& request,
 		header.seqNum = ByteOrder::toNetwork(slotRef.frameCount);
 
 		std::memcpy(&response[0], &header, RTP_BASE_HEADER_SIZE);
-		const size_t packetSize = std::min(slotRef.packetSize, RAOP_PACKET_MAX_SIZE);
+		const size_t packetSize = (std::min)(slotRef.packetSize, RAOP_PACKET_MAX_SIZE);
 		std::memcpy(&response[RTP_BASE_HEADER_SIZE], slotRef.packetData, packetSize);
 
 		sendTo(_controlSocket, requestorAddress, &response[0], RTP_BASE_HEADER_SIZE + packetSize);
 
 		// update loop counters
-		        missedPktAge -= 1;
+		missedPktAge -= 1;
 		request.missedPktCnt -= 1;
 		request.missedSeqNum += 1;
 	}

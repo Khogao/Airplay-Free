@@ -5,6 +5,18 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0155CF28-9AB3-40C2-A9BF-8F2F245E52DB}</ProjectGuid>
@@ -13,7 +25,7 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="PropertySheets">
@@ -25,23 +37,44 @@
     <OutDir>$(ProjectName)\out\</OutDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
-    <IncludePath>$(BonjourSdkDir)include;$(LibAlacDir)codec;$(LibSrcDir)src;$(OpenSslDir)include;$(PocoCppDir)Foundation\include;$(PocoCppDir)Net\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(LibAlacDir)out;$(LibSrcDir)out;$(OpenSslDir)out32d;$(PocoCppDir)lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vcpkg\installed\x86-windows\include;$(BonjourSdkDir)include;$(LibAlacDir)codec;$(LibSrcDir)src;$(OpenSslDir)include;$(PocoCppDir)Foundation\include;$(PocoCppDir)Net\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vcpkg\installed\x86-windows\lib;$(LibAlacDir)out;$(LibSrcDir)out;$(OpenSslDir)out32d;$(PocoCppDir)lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectName)\sdk;$(ProjectName)\src\core;$(ProjectName)\src\view</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NOMINMAX;POCO_NO_AUTOMATIC_LIBS;RSOUTPUT_EXPORTS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;$(ProjectName)\src\core;$(ProjectName)\src\core\impl;$(ProjectName)\src\view;$(ProjectName)\lib\alac</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;POCO_NO_AUTOMATIC_LIBS;RSOUTPUT_EXPORTS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WarningLevel>Level4</WarningLevel>
       <DisableSpecificWarnings>4100;4702</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;alac32d.lib;gdi32.lib;iphlpapi.lib;libeay32d.lib;PocoFoundation32d.lib;PocoNet32d.lib;samplerate32d.lib;user32.lib;ws2_32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;gdi32.lib;iphlpapi.lib;libcrypto.lib;libssl.lib;PocoFoundationd.lib;PocoNetd.lib;samplerate.lib;user32.lib;ws2_32.lib;crypt32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\vcpkg\installed\x86-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;$(ProjectName)\src\core;$(ProjectName)\src\core\impl;$(ProjectName)\src\view;$(ProjectName)\lib\alac</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;POCO_NO_AUTOMATIC_LIBS;RSOUTPUT_EXPORTS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <Optimization>MaxSpeed</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4702</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>advapi32.lib;gdi32.lib;iphlpapi.lib;libcrypto.lib;libssl.lib;PocoFoundation.lib;PocoNet.lib;samplerate.lib;user32.lib;ws2_32.lib;crypt32.lib</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -64,6 +97,13 @@
     <ClCompile Include="$(ProjectName)\src\core\impl\Plugin.cpp" />
     <ClCompile Include="$(ProjectName)\src\core\impl\RemoteControl.cpp" />
     <ClCompile Include="$(ProjectName)\src\core\impl\ServiceDiscovery.cpp" />
+    <ClCompile Include="$(ProjectName)\lib\alac\ag_dec.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\ag_enc.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\ALACBitUtilities.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\dp_enc.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\EndianPortable.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\matrix_enc.c" />
+    <ClCompile Include="$(ProjectName)\lib\alac\ALACEncoder.cpp" />
     <ClCompile Include="$(ProjectName)\src\core\impl\raop\NTPTimestamp.cpp" />
     <ClCompile Include="$(ProjectName)\src\core\impl\raop\PacketBuffer.cpp" />
     <ClCompile Include="$(ProjectName)\src\core\impl\raop\RAOPDevice.cpp" />
@@ -120,4 +160,54 @@
     <ResourceCompile Include="$(ProjectName)\src\view\impl\Resources.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <IncludePath>$(SolutionDir)windows_app\build\vcpkg_installed\x64-windows\include;$(BonjourSdkDir)include;$(LibAlacDir)codec;$(LibSrcDir)src;$(OpenSslDir)include;$(PocoCppDir)Foundation\include;$(PocoCppDir)Net\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)windows_app\build\vcpkg_installed\x64-windows\lib;$(LibAlacDir)out;$(LibSrcDir)out;$(OpenSslDir)out32d;$(PocoCppDir)lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;$(ProjectName)\src\core;$(ProjectName)\src\core\impl;$(ProjectName)\src\view;$(ProjectName)\lib\alac</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;POCO_NO_AUTOMATIC_LIBS;RSOUTPUT_EXPORTS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <Optimization>Disabled</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4702</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>advapi32.lib;gdi32.lib;iphlpapi.lib;libcrypto.lib;libssl.lib;PocoFoundationd.lib;PocoNetd.lib;samplerate.lib;user32.lib;ws2_32.lib;crypt32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\vcpkg\installed\x64-windows\debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectName)\sdk;$(ProjectName)\src\core;$(ProjectName)\src\core\impl;$(ProjectName)\src\view;$(ProjectName)\lib\alac</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NOMINMAX;POCO_NO_AUTOMATIC_LIBS;RSOUTPUT_EXPORTS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <Optimization>MaxSpeed</Optimization>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4702</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>advapi32.lib;gdi32.lib;iphlpapi.lib;libcrypto.lib;libssl.lib;PocoFoundation.lib;PocoNet.lib;samplerate.lib;user32.lib;ws2_32.lib;crypt32.lib</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <IncludePath>$(SolutionDir)windows_app\build\vcpkg_installed\x64-windows\include;$(BonjourSdkDir)include;$(LibAlacDir)codec;$(LibSrcDir)src;$(OpenSslDir)include;$(PocoCppDir)Foundation\include;$(PocoCppDir)Net\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)windows_app\build\vcpkg_installed\x64-windows\lib;$(LibAlacDir)out;$(LibSrcDir)out;$(OpenSslDir)out32d;$(PocoCppDir)lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
 </Project>

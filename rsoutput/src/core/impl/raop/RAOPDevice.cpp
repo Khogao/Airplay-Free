@@ -28,14 +28,12 @@
 #include <Poco/ByteOrder.h>
 #include <Poco/Format.h>
 
-
 using Poco::ByteOrder;
 using Poco::Net::IPAddress;
 using Poco::Net::SocketAddress;
 using Poco::Net::StreamSocket;
 
-
-static void dmapAppend(buffer_t& buf, const char* key, const void* val, const uint32_t len)
+static void dmapAppend(buffer_t &buf, const char *key, const void *val, const uint32_t len)
 {
 	assert(std::strlen(key) == 4);
 
@@ -61,42 +59,38 @@ static void dmapAppend(buffer_t& buf, const char* key, const void* val, const ui
 }
 
 template <typename integer_t>
-inline void dmapAppend(buffer_t& buf, const char* key, integer_t val)
+inline void dmapAppend(buffer_t &buf, const char *key, integer_t val)
 {
 	val = ByteOrder::toNetwork(val);
 	dmapAppend(buf, key, &val, sizeof(integer_t));
 }
 
 template <>
-inline void dmapAppend(buffer_t& buf, const char* key, const int8_t val)
+inline void dmapAppend(buffer_t &buf, const char *key, const int8_t val)
 {
 	dmapAppend(buf, key, &val, 1);
 }
 
 template <>
-inline void dmapAppend(buffer_t& buf, const char* key, const uint8_t val)
+inline void dmapAppend(buffer_t &buf, const char *key, const uint8_t val)
 {
 	dmapAppend(buf, key, &val, 1);
 }
 
-
 //------------------------------------------------------------------------------
 
-
-RAOPDevice::RAOPDevice(RAOPEngine& raopEngine, const std::string& publicKey,
-	const int encryptionType, const byte_t metadataFlags)
-:
-	_encryptionType(encryptionType),
-	_metadataFlags(metadataFlags),
-	_raopEngine(raopEngine),
-	_deviceVolume(0),
-	_audioLatency(0),
-	_pk(publicKey)
+RAOPDevice::RAOPDevice(RAOPEngine &raopEngine, const std::string &publicKey,
+					   const int encryptionType, const byte_t metadataFlags)
+	: _encryptionType(encryptionType),
+	  _metadataFlags(metadataFlags),
+	  _raopEngine(raopEngine),
+	  _deviceVolume(0),
+	  _audioLatency(0),
+	  _pk(publicKey)
 {
 	// generate DACP remote control identifier
 	Random::fill(&_remoteControlId, sizeof(uint32_t));
 }
-
 
 RAOPDevice::~RAOPDevice()
 {
@@ -107,14 +101,13 @@ RAOPDevice::~RAOPDevice()
 	CATCH_ALL
 }
 
-
 /**
  * Tests connection with remote speakers on specified socket.
  *
  * @param firstTime <code>true</code> if first initiation for remote speakers
  * @return zero on success; non-zero on failure
  */
-int RAOPDevice::test(StreamSocket& socket, const bool firstTime)
+int RAOPDevice::test(StreamSocket &socket, const bool firstTime)
 {
 	if (_rtspClient.get() == NULL || !_rtspClient->isReady())
 	{
@@ -132,14 +125,13 @@ int RAOPDevice::test(StreamSocket& socket, const bool firstTime)
 	return 0;
 }
 
-
 /**
  * Opens session with remote speakers on specified socket.
  *
  * @param audioJackStatus [out] status of remote speakers audio jack
  * @return zero on success; non-zero on failure
  */
-int RAOPDevice::open(StreamSocket& socket, AudioJackStatus& audioJackStatus)
+int RAOPDevice::open(StreamSocket &socket, AudioJackStatus &audioJackStatus)
 {
 	const IPAddress remoteHost = socket.peerAddress().host();
 
@@ -197,7 +189,6 @@ int RAOPDevice::open(StreamSocket& socket, AudioJackStatus& audioJackStatus)
 	return 0;
 }
 
-
 void RAOPDevice::close()
 {
 	_audioLatency = 0;
@@ -215,18 +206,15 @@ void RAOPDevice::close()
 	}
 }
 
-
 bool RAOPDevice::isOpen(const bool pollConnection) const
 {
 	return (_rtspClient.get() != NULL && (!pollConnection || _rtspClient->isReady()));
 }
 
-
-void RAOPDevice::setPassword(const std::string& password)
+void RAOPDevice::setPassword(const std::string &password)
 {
 	_rtspClient->setPassword(password);
 }
-
 
 float RAOPDevice::getVolume()
 {
@@ -234,11 +222,12 @@ float RAOPDevice::getVolume()
 
 	try
 	{
-		assert(_rtspClient.get() != NULL && _rtspClient->isReady());  std::string vol;
+		assert(_rtspClient.get() != NULL && _rtspClient->isReady());
+		std::string vol;
 		if (_rtspClient->doGetParameter("volume", vol) == RTSP_STATUS_CODE_OK)
 		{
-			const float volume = (float) std::atof(vol.c_str());
-			_deviceVolume = std::min(std::max(volume, -100.0f), 0.0f);
+			const float volume = (float)std::atof(vol.c_str());
+			_deviceVolume = (std::min)((std::max)(volume, -100.0f), 0.0f);
 		}
 	}
 	CATCH_ALL
@@ -246,42 +235,40 @@ float RAOPDevice::getVolume()
 	return _deviceVolume;
 }
 
-
 void RAOPDevice::putVolume(const float volume)
 {
 	Debugger::printf("[%s] old device volume: %f, new device volume: %f", __FUNCTION__, _deviceVolume, volume);
 
-	_deviceVolume = std::min(std::max(volume, -100.0f), 0.0f);
+	_deviceVolume = (std::min)((std::max)(volume, -100.0f), 0.0f);
 
 	assert(_rtspClient.get() != NULL && _rtspClient->isReady());
 	// reiterate volume to device; some wait for echo before changing levels
 	_rtspClient->doSetParameter("volume", Poco::format("%hf", _deviceVolume));
 }
 
-
 void RAOPDevice::setVolume(const float absolute, const float relative)
 {
 	Debugger::printf("[%s] device volume: %f, old master volume: %f, new master volume: %f", __FUNCTION__, _deviceVolume, absolute - relative, absolute);
 
-	if ((_deviceVolume == 0.0f && relative == 0.0f)
-		|| std::fabs(_deviceVolume - (absolute - relative)) < 0.1f)
+	if ((_deviceVolume == 0.0f && relative == 0.0f) || std::fabs(_deviceVolume - (absolute - relative)) < 0.1f)
 	{
 		_deviceVolume = absolute;
 		assert(-100.0f <= _deviceVolume && _deviceVolume <= 0.0f);
 	}
 	else
 	{
-		_deviceVolume = std::min(std::max(float(_deviceVolume + relative), -100.0f), -9.0f);
+		_deviceVolume = (std::min)((std::max)(float(_deviceVolume + relative), -100.0f), -9.0f);
 	}
 
 	float decibels(_deviceVolume);
-	if (decibels > 0.0f) decibels = 0.0f;
-	if (decibels <= -100.0f) decibels = -144.0f;
+	if (decibels > 0.0f)
+		decibels = 0.0f;
+	if (decibels <= -100.0f)
+		decibels = -144.0f;
 
 	assert(_rtspClient.get() != NULL && _rtspClient->isReady());
 	_rtspClient->doSetParameter("volume", Poco::format("%hf", decibels));
 }
-
 
 void RAOPDevice::flush()
 {
@@ -289,21 +276,20 @@ void RAOPDevice::flush()
 	_rtspClient->doFlush(_raopEngine._rtpSeqNumOutgoing, _raopEngine._rtpTimeOutgoing);
 }
 
-
-void RAOPDevice::updateMetadata(const OutputMetadata& metadata)
+void RAOPDevice::updateMetadata(const OutputMetadata &metadata)
 {
 	const uint32_t rtpTime = _raopEngine._rtpTimeIncoming;
 
 	if (_metadataFlags & MD_TEXT)
 	{
-		const std::string& title = metadata.title();
-		const std::string& album = metadata.album();
-		const std::string& artist = metadata.artist();
+		const std::string &title = metadata.title();
+		const std::string &album = metadata.album();
+		const std::string &artist = metadata.artist();
 
 		// append metadata strings to DMAP tag buffer
 		buffer_t tags;
 		dmapAppend(tags, "mikd", int8_t(2));
-	//	dmapAppend(tags, "miid", uint32_t(0));
+		//	dmapAppend(tags, "miid", uint32_t(0));
 		dmapAppend(tags, "minm", &title[0], title.length());
 		dmapAppend(tags, "asal", &album[0], album.length());
 		dmapAppend(tags, "asar", &artist[0], artist.length());
@@ -326,19 +312,19 @@ void RAOPDevice::updateMetadata(const OutputMetadata& metadata)
 		if (!tooBig)
 		{
 			const shorts_t dims = metadata.artworkDims();
-			if (dims.first > 1000 || dims.second > 1000) tooBig = true;
+			if (dims.first > 1000 || dims.second > 1000)
+				tooBig = true;
 		}
 
-		const buffer_t& imageData = (!tooBig ? metadata.artworkData() : buffer_t());
-		const std::string& imageType = (!tooBig ? metadata.artworkType() : "image/none");
+		const buffer_t &imageData = (!tooBig ? metadata.artworkData() : buffer_t());
+		const std::string &imageType = (!tooBig ? metadata.artworkType() : "image/none");
 
 		assert(_rtspClient.get() != NULL && _rtspClient->isReady());
 		_rtspClient->doSetParameter(imageType, imageData, rtpTime);
 	}
 }
 
-
-void RAOPDevice::updateProgress(const OutputInterval& interval)
+void RAOPDevice::updateProgress(const OutputInterval &interval)
 {
 	if (_metadataFlags & MD_PROGRESS)
 	{

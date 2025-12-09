@@ -19,45 +19,41 @@
 #include <cassert>
 #include <limits>
 
-
 using Poco::Timestamp;
-
 
 static const int64_t MICROSECONDS_PER_SECOND = 1000000;
 static const int64_t SECONDS_FROM_1900_TO_1970 = 0x83AA7E80;
-static const int64_t UINT32_MAX = std::numeric_limits<uint32_t>::max();
+static const int64_t MY_UINT32_MAX = (std::numeric_limits<uint32_t>::max)();
 
-
-NTPTimestamp& NTPTimestamp::operator =(const Timestamp& timestamp)
+NTPTimestamp &NTPTimestamp::operator=(const Timestamp &timestamp)
 {
 	int64_t microseconds = timestamp.epochMicroseconds();
 
 	// calculate NTP timestamp seconds
-	int64_t seconds = microseconds / MICROSECONDS_PER_SECOND;
+	int64_t ntpSeconds = microseconds / MICROSECONDS_PER_SECOND;
 	// NTP epoch is Jan 1, 1900; Timestamp epoch is Jan 1, 1970
-	seconds += SECONDS_FROM_1900_TO_1970;
-	assert(seconds <= UINT32_MAX);
+	ntpSeconds += SECONDS_FROM_1900_TO_1970;
+	assert(ntpSeconds <= MY_UINT32_MAX);
 
 	// calculate NTP timestamp fractional seconds
 	microseconds %= MICROSECONDS_PER_SECOND;
-	int64_t fractionalSeconds =
-		(microseconds * (UINT32_MAX + 1)) / MICROSECONDS_PER_SECOND;
-	assert(fractionalSeconds <= UINT32_MAX);
+	int64_t ntpFractionalSeconds =
+		(microseconds * (MY_UINT32_MAX + 1)) / MICROSECONDS_PER_SECOND;
+	assert(ntpFractionalSeconds <= MY_UINT32_MAX);
 
-	this->seconds = static_cast<uint32_t>(seconds);
-	this->fractionalSeconds = static_cast<uint32_t>(fractionalSeconds);
+	this->seconds = static_cast<uint32_t>(ntpSeconds);
+	this->fractionalSeconds = static_cast<uint32_t>(ntpFractionalSeconds);
 
 	return *this;
 }
 
-
 NTPTimestamp::operator Timestamp() const
 {
 	// NTP epoch is Jan 1, 1900; Timestamp epoch is Jan 1, 1970
-	const int64_t seconds = this->seconds - SECONDS_FROM_1900_TO_1970;
+	const int64_t ntpSeconds = this->seconds - SECONDS_FROM_1900_TO_1970;
 
-	int64_t microseconds = seconds * MICROSECONDS_PER_SECOND;
-	microseconds += (fractionalSeconds * MICROSECONDS_PER_SECOND) / (UINT32_MAX + 1);
+	int64_t microseconds = ntpSeconds * MICROSECONDS_PER_SECOND;
+	microseconds += (fractionalSeconds * MICROSECONDS_PER_SECOND) / (MY_UINT32_MAX + 1);
 
 	return Timestamp(microseconds);
 }

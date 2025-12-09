@@ -7,7 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include <windows.h>
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -101,7 +101,7 @@ BEGIN
         BEGIN
             VALUE "FileDescription", "Remote Speakers output"
             VALUE "FileVersion", "0, 0, 0, 0"
-            VALUE "LegalCopyright", "Copyright © 2013-2021  Eric Milles"
+            VALUE "LegalCopyright", "Copyright ï¿½ 2013-2021  Eric Milles"
             VALUE "ProductVersion", "0, 0, 0, 0"
         END
     END

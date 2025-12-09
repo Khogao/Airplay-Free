@@ -46,7 +46,6 @@ static const initquit_factory_t<Main> initquit_factory_g;
 #include "Platform.inl"
 #include <shlobj.h>
 
-
 void Main::on_init()
 {
 	try
@@ -55,7 +54,7 @@ void Main::on_init()
 		Debugger::setPrintCallback(console::print);
 
 		// initialize plug-in options file path
-		const char* const profilePath = core_api::get_profile_path();
+		const char *const profilePath = core_api::get_profile_path();
 		if (profilePath != NULL && std::strncmp(profilePath, "file://", 7) == 0)
 		{
 			std::string path, name;
@@ -88,18 +87,23 @@ void Main::on_init()
 		// load plug-in options from file
 		OptionsUtils::loadOptions(iniFilePath);
 
+		// Bypass activation for Foobar2000 component (Commented out - not needed)
+		// if (Options::SharedPtr opts = Options::getOptions())
+		// {
+		// 	opts->setBypassActivation(true);
+		// }
+
 		player.reset(new FoobarPlayer);
 		output.reset(new OutputComponent(*player));
 	}
 	CATCH_ALL
 }
 
-
 void Main::on_quit()
 {
 	try
 	{
-		std::auto_ptr<Player         > fp(player);
+		std::auto_ptr<Player> fp(player);
 		std::auto_ptr<OutputComponent> oc(output);
 
 		// save plug-in options to file

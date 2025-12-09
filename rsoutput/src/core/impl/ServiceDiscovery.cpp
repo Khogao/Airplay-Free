@@ -35,18 +35,15 @@
 #include <Poco/SharedLibrary.h>
 #include <Poco/Thread.h>
 
-
 using Poco::ByteOrder;
 using Poco::FastMutex;
 using Poco::Runnable;
 using Poco::SharedLibrary;
 using Poco::Thread;
 
-
 class ServiceDiscoveryImpl
-:
-	public Runnable,
-	private Uncopyable
+	: public Runnable,
+	  private Uncopyable
 {
 	friend class ServiceDiscovery;
 
@@ -64,154 +61,154 @@ class ServiceDiscoveryImpl
 		DNSServiceFlags,
 		uint32_t,
 		DNSServiceErrorType,
-		const char*,
-		const char*,
-		const char*,
-		void*);
+		const char *,
+		const char *,
+		const char *,
+		void *);
 	// DNSServiceQueryRecordReply
 	static void DNSSD_API queryCallback(
 		DNSServiceRef,
 		DNSServiceFlags,
 		uint32_t,
 		DNSServiceErrorType,
-		const char*,
+		const char *,
 		uint16_t,
 		uint16_t,
 		uint16_t,
-		const void*,
+		const void *,
 		uint32_t,
-		void*);
+		void *);
 	// DNSServiceRegisterReply
 	static void DNSSD_API registerCallback(
 		DNSServiceRef,
 		DNSServiceFlags,
 		DNSServiceErrorType,
-		const char*,
-		const char*,
-		const char*,
-		void*);
+		const char *,
+		const char *,
+		const char *,
+		void *);
 	// DNSServiceResolveReply
 	static void DNSSD_API resolveCallback(
 		DNSServiceRef,
 		DNSServiceFlags,
 		uint32_t,
 		DNSServiceErrorType,
-		const char*,
-		const char*,
+		const char *,
+		const char *,
 		uint16_t,
 		uint16_t,
-		const unsigned char*,
-		void*);
+		const unsigned char *,
+		void *);
 
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceBrowseProc)(
-		DNSServiceRef*,
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceBrowseProc)(
+		DNSServiceRef *,
 		DNSServiceFlags,
 		uint32_t,
-		const char*,
-		const char*,
+		const char *,
+		const char *,
 		DNSServiceBrowseReply,
-		void*);
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceQueryRecordProc)(
-		DNSServiceRef*,
+		void *);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceQueryRecordProc)(
+		DNSServiceRef *,
 		DNSServiceFlags,
 		uint32_t,
-		const char*,
+		const char *,
 		uint16_t,
 		uint16_t,
 		DNSServiceQueryRecordReply,
-		void*);
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceRegisterProc)(
-		DNSServiceRef*,
+		void *);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceRegisterProc)(
+		DNSServiceRef *,
 		DNSServiceFlags,
 		uint32_t,
-		const char*,
-		const char*,
-		const char*,
-		const char*,
+		const char *,
+		const char *,
+		const char *,
+		const char *,
 		uint16_t,
 		uint16_t,
-		const void*,
+		const void *,
 		DNSServiceRegisterReply,
-		void*);
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceResolveProc)(
-		DNSServiceRef*,
+		void *);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceResolveProc)(
+		DNSServiceRef *,
 		DNSServiceFlags,
 		uint32_t,
-		const char*,
-		const char*,
-		const char*,
+		const char *,
+		const char *,
+		const char *,
 		DNSServiceResolveReply,
-		void*);
+		void *);
 
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceGetPropertyProc)(
-		char*,
-		void*,
-		uint32_t*);
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceConstructFullNameProc)(
-		char*,
-		const char*,
-		const char*,
-		const char*);
-	typedef DNSServiceErrorType (DNSSD_API *DNSServiceProcessResultProc)(DNSServiceRef);
-	typedef void (DNSSD_API *DNSServiceRefDeallocateProc)(DNSServiceRef);
-	typedef int (DNSSD_API *DNSServiceRefSockFDProc)(DNSServiceRef);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceGetPropertyProc)(
+		char *,
+		void *,
+		uint32_t *);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceConstructFullNameProc)(
+		char *,
+		const char *,
+		const char *,
+		const char *);
+	typedef DNSServiceErrorType(DNSSD_API *DNSServiceProcessResultProc)(DNSServiceRef);
+	typedef void(DNSSD_API *DNSServiceRefDeallocateProc)(DNSServiceRef);
+	typedef int(DNSSD_API *DNSServiceRefSockFDProc)(DNSServiceRef);
 
-	typedef void (DNSSD_API *TXTRecordCreateProc)(
-		TXTRecordRef*,
+	typedef void(DNSSD_API *TXTRecordCreateProc)(
+		TXTRecordRef *,
 		uint16_t,
-		void*);
-	typedef void (DNSSD_API *TXTRecordDeallocateProc)(
-		TXTRecordRef*);
-	typedef uint16_t (DNSSD_API *TXTRecordGetLengthProc)(
-		const TXTRecordRef*);
-	typedef const void* (DNSSD_API *TXTRecordGetBytesPtrProc)(
-		const TXTRecordRef*);
-	typedef int (DNSSD_API *TXTRecordContainsKeyProc)(
+		void *);
+	typedef void(DNSSD_API *TXTRecordDeallocateProc)(
+		TXTRecordRef *);
+	typedef uint16_t(DNSSD_API *TXTRecordGetLengthProc)(
+		const TXTRecordRef *);
+	typedef const void *(DNSSD_API *TXTRecordGetBytesPtrProc)(
+		const TXTRecordRef *);
+	typedef int(DNSSD_API *TXTRecordContainsKeyProc)(
 		uint16_t,
-		const void*,
-		const char*);
-	typedef uint16_t (DNSSD_API *TXTRecordCountKeysProc)(
+		const void *,
+		const char *);
+	typedef uint16_t(DNSSD_API *TXTRecordCountKeysProc)(
 		uint16_t,
-		const void*);
-	typedef DNSServiceErrorType (DNSSD_API *TXTRecordGetItemAtIndexProc)(
+		const void *);
+	typedef DNSServiceErrorType(DNSSD_API *TXTRecordGetItemAtIndexProc)(
 		uint16_t,
-		const void*,
+		const void *,
 		uint16_t,
 		uint16_t,
-		char*,
-		uint8_t*,
-		const void**);
-	typedef const void* (DNSSD_API *TXTRecordGetValuePtrProc)(
+		char *,
+		uint8_t *,
+		const void **);
+	typedef const void *(DNSSD_API *TXTRecordGetValuePtrProc)(
 		uint16_t,
-		const void*,
-		const char*,
-		uint8_t*);
-	typedef DNSServiceErrorType (DNSSD_API *TXTRecordSetValueProc)(
-		TXTRecordRef*,
-		const char*,
+		const void *,
+		const char *,
+		uint8_t *);
+	typedef DNSServiceErrorType(DNSSD_API *TXTRecordSetValueProc)(
+		TXTRecordRef *,
+		const char *,
 		uint8_t,
-		const void*);
+		const void *);
 
 	SharedLibrary _sharedLibrary;
 	// shared library function pointers:
-	DNSServiceBrowseProc            browseServices;
-	DNSServiceRegisterProc          registerService;
-	DNSServiceResolveProc           resolveService;
-	DNSServiceQueryRecordProc       queryRecord;
-	DNSServiceGetPropertyProc       getProperty;
+	DNSServiceBrowseProc browseServices;
+	DNSServiceRegisterProc registerService;
+	DNSServiceResolveProc resolveService;
+	DNSServiceQueryRecordProc queryRecord;
+	DNSServiceGetPropertyProc getProperty;
 	DNSServiceConstructFullNameProc makeFullName;
-	DNSServiceRefDeallocateProc     deallocate;
-	DNSServiceRefSockFDProc         getSocketFD;
-	DNSServiceProcessResultProc     processResult;
-	TXTRecordCreateProc             txtRecordCreate;
-	TXTRecordDeallocateProc         txtRecordDeallocate;
-	TXTRecordGetLengthProc          txtRecordGetLength;
-	TXTRecordGetBytesPtrProc        txtRecordGetBytesPtr;
-	TXTRecordContainsKeyProc        txtRecordContainsKey;
-	TXTRecordCountKeysProc          txtRecordCountKeys;
-	TXTRecordGetItemAtIndexProc     txtRecordGetItemAtIndex;
-	TXTRecordGetValuePtrProc        txtRecordGetValue;
-	TXTRecordSetValueProc           txtRecordSetValue;
+	DNSServiceRefDeallocateProc deallocate;
+	DNSServiceRefSockFDProc getSocketFD;
+	DNSServiceProcessResultProc processResult;
+	TXTRecordCreateProc txtRecordCreate;
+	TXTRecordDeallocateProc txtRecordDeallocate;
+	TXTRecordGetLengthProc txtRecordGetLength;
+	TXTRecordGetBytesPtrProc txtRecordGetBytesPtr;
+	TXTRecordContainsKeyProc txtRecordContainsKey;
+	TXTRecordCountKeysProc txtRecordCountKeys;
+	TXTRecordGetItemAtIndexProc txtRecordGetItemAtIndex;
+	TXTRecordGetValuePtrProc txtRecordGetValue;
+	TXTRecordSetValueProc txtRecordSetValue;
 
 	std::list<DNSServiceRef> _activeRefs;
 
@@ -222,19 +219,15 @@ class ServiceDiscoveryImpl
 	Thread _thread;
 };
 
-
 static const DNSServiceFlags kDNSServiceFlagsNone = 0;
-
 
 //------------------------------------------------------------------------------
 
-
-ServiceDiscoveryImpl& ServiceDiscovery::impl()
+ServiceDiscoveryImpl &ServiceDiscovery::impl()
 {
 	static ServiceDiscoveryImpl singleton;
 	return singleton;
 }
-
 
 bool ServiceDiscovery::isAvailable()
 {
@@ -259,12 +252,10 @@ bool ServiceDiscovery::isAvailable()
 	return false;
 }
 
-
 bool ServiceDiscovery::isRunning(DNSServiceRef sdRef)
 {
 	return impl().isRunning(sdRef);
 }
-
 
 void ServiceDiscovery::start(DNSServiceRef sdRef)
 {
@@ -280,7 +271,6 @@ void ServiceDiscovery::start(DNSServiceRef sdRef)
 	}
 }
 
-
 void ServiceDiscovery::stop(DNSServiceRef sdRef)
 {
 	try
@@ -295,10 +285,9 @@ void ServiceDiscovery::stop(DNSServiceRef sdRef)
 	}
 }
 
-
 std::string ServiceDiscovery::fullName(
-	const std::string& name,
-	const std::string& type)
+	const std::string &name,
+	const std::string &type)
 {
 	char fullName[kDNSServiceMaxDomainName];
 	const DNSServiceErrorType error = impl().makeFullName(
@@ -314,10 +303,9 @@ std::string ServiceDiscovery::fullName(
 	return fullName;
 }
 
-
 DNSServiceRef ServiceDiscovery::browseServices(
-	const std::string& type,
-	BrowseListener& listener)
+	const std::string &type,
+	BrowseListener &listener)
 {
 	DNSServiceRef sdRef;
 	const DNSServiceErrorType error = impl().browseServices(
@@ -327,7 +315,7 @@ DNSServiceRef ServiceDiscovery::browseServices(
 		type.c_str(),
 		"local.",
 		ServiceDiscoveryImpl::browseCallback,
-		(void*) &listener);
+		(void *)&listener);
 	if (error != kDNSServiceErr_NoError)
 	{
 		throw std::runtime_error(Poco::format(
@@ -336,24 +324,21 @@ DNSServiceRef ServiceDiscovery::browseServices(
 	return sdRef;
 }
 
-
 DNSServiceRef ServiceDiscovery::queryService(
-	const std::string& rrname,
+	const std::string &rrname,
 	const uint16_t rrtype,
-	QueryListener& listener)
+	QueryListener &listener)
 {
 	DNSServiceRef sdRef;
 	const DNSServiceErrorType error = impl().queryRecord(
 		&sdRef,
-		kDNSServiceFlagsLongLivedQuery
-			| kDNSServiceFlagsAllowRemoteQuery
-			| kDNSServiceFlagsSuppressUnusable,
+		kDNSServiceFlagsLongLivedQuery | kDNSServiceFlagsAllowRemoteQuery | kDNSServiceFlagsSuppressUnusable,
 		kDNSServiceInterfaceIndexAny,
 		rrname.c_str(),
 		rrtype,
 		kDNSServiceClass_IN,
 		ServiceDiscoveryImpl::queryCallback,
-		(void*) &listener);
+		(void *)&listener);
 	if (error != kDNSServiceErr_NoError)
 	{
 		throw std::runtime_error(Poco::format(
@@ -362,13 +347,12 @@ DNSServiceRef ServiceDiscovery::queryService(
 	return sdRef;
 }
 
-
 DNSServiceRef ServiceDiscovery::registerService(
-	const std::string& name,
-	const std::string& type,
+	const std::string &name,
+	const std::string &type,
 	const uint16_t port,
-	const TXTRecord& txtRecord,
-	RegisterListener& listener)
+	const TXTRecord &txtRecord,
+	RegisterListener &listener)
 {
 	DNSServiceRef sdRef;
 	const DNSServiceErrorType error = impl().registerService(
@@ -383,7 +367,7 @@ DNSServiceRef ServiceDiscovery::registerService(
 		txtRecord.len(),
 		txtRecord.buf(),
 		ServiceDiscoveryImpl::registerCallback,
-		(void*) &listener);
+		(void *)&listener);
 	if (error != kDNSServiceErr_NoError)
 	{
 		throw std::runtime_error(Poco::format(
@@ -392,11 +376,10 @@ DNSServiceRef ServiceDiscovery::registerService(
 	return sdRef;
 }
 
-
 DNSServiceRef ServiceDiscovery::resolveService(
-	const std::string& name,
-	const std::string& type,
-	ResolveListener& listener)
+	const std::string &name,
+	const std::string &type,
+	ResolveListener &listener)
 {
 	DNSServiceRef sdRef;
 	const DNSServiceErrorType error = impl().resolveService(
@@ -407,7 +390,7 @@ DNSServiceRef ServiceDiscovery::resolveService(
 		type.c_str(),
 		"local.",
 		ServiceDiscoveryImpl::resolveCallback,
-		(void*) &listener);
+		(void *)&listener);
 	if (error != kDNSServiceErr_NoError)
 	{
 		throw std::runtime_error(Poco::format(
@@ -416,22 +399,20 @@ DNSServiceRef ServiceDiscovery::resolveService(
 	return sdRef;
 }
 
-
 //------------------------------------------------------------------------------
-
 
 void DNSSD_API ServiceDiscoveryImpl::browseCallback(
 	DNSServiceRef sdRef,
 	const DNSServiceFlags flags,
 	const uint32_t interfaceIndex,
 	const DNSServiceErrorType error,
-	const char* const name,
-	const char* const type,
-	const char* const domain,
-	void* const context)
+	const char *const name,
+	const char *const type,
+	const char *const domain,
+	void *const context)
 {
-	ServiceDiscovery::BrowseListener* listener =
-		static_cast<ServiceDiscovery::BrowseListener*>(context);
+	ServiceDiscovery::BrowseListener *listener =
+		static_cast<ServiceDiscovery::BrowseListener *>(context);
 	try
 	{
 		assert(error == kDNSServiceErr_NoError);
@@ -449,22 +430,21 @@ void DNSSD_API ServiceDiscoveryImpl::browseCallback(
 	CATCH_ALL
 }
 
-
 void DNSSD_API ServiceDiscoveryImpl::queryCallback(
 	DNSServiceRef sdRef,
 	const DNSServiceFlags flags,
 	const uint32_t interfaceIndex,
 	const DNSServiceErrorType error,
-	const char* const rrname,
+	const char *const rrname,
 	const uint16_t rrtype,
 	const uint16_t rrclass,
 	const uint16_t rdlen,
-	const void* const rdata,
+	const void *const rdata,
 	const uint32_t ttl,
-	void* const context)
+	void *const context)
 {
-	ServiceDiscovery::QueryListener* listener =
-		static_cast<ServiceDiscovery::QueryListener*>(context);
+	ServiceDiscovery::QueryListener *listener =
+		static_cast<ServiceDiscovery::QueryListener *>(context);
 	try
 	{
 		assert(error == kDNSServiceErr_NoError);
@@ -476,18 +456,17 @@ void DNSSD_API ServiceDiscoveryImpl::queryCallback(
 	CATCH_ALL
 }
 
-
 void DNSSD_API ServiceDiscoveryImpl::registerCallback(
 	DNSServiceRef sdRef,
 	const DNSServiceFlags flags,
 	const DNSServiceErrorType error,
-	const char* const name,
-	const char* const type,
-	const char* const domain,
-	void* const context)
+	const char *const name,
+	const char *const type,
+	const char *const domain,
+	void *const context)
 {
-	ServiceDiscovery::RegisterListener* listener =
-		static_cast<ServiceDiscovery::RegisterListener*>(context);
+	ServiceDiscovery::RegisterListener *listener =
+		static_cast<ServiceDiscovery::RegisterListener *>(context);
 	try
 	{
 		assert(error == kDNSServiceErr_NoError);
@@ -498,79 +477,74 @@ void DNSSD_API ServiceDiscoveryImpl::registerCallback(
 	CATCH_ALL
 }
 
-
 void DNSSD_API ServiceDiscoveryImpl::resolveCallback(
 	DNSServiceRef sdRef,
 	const DNSServiceFlags flags,
 	const uint32_t interfaceIndex,
 	const DNSServiceErrorType error,
-	const char* const fullName,
-	const char* const host,
+	const char *const fullName,
+	const char *const host,
 	const uint16_t port,
 	const uint16_t txtLength,
-	const unsigned char* const txtRecord,
-	void* const context)
+	const unsigned char *const txtRecord,
+	void *const context)
 {
-	ServiceDiscovery::ResolveListener* listener =
-		static_cast<ServiceDiscovery::ResolveListener*>(context);
+	ServiceDiscovery::ResolveListener *listener =
+		static_cast<ServiceDiscovery::ResolveListener *>(context);
 	try
 	{
 		assert(error == kDNSServiceErr_NoError);
 
 		listener->onServiceResolved(sdRef,
-			fullName, host, ByteOrder::fromNetwork(port),
-			ServiceDiscovery::TXTRecord(txtRecord, txtLength));
+									fullName, host, ByteOrder::fromNetwork(port),
+									ServiceDiscovery::TXTRecord(txtRecord, txtLength));
 	}
 	CATCH_ALL
 }
 
-
 //------------------------------------------------------------------------------
 
-
 ServiceDiscoveryImpl::ServiceDiscoveryImpl()
-:
-	_sharedLibrary("dnssd.dll"),
-	browseServices(static_cast<DNSServiceBrowseProc>(
-		_sharedLibrary.getSymbol("DNSServiceBrowse"))),
-	registerService(static_cast<DNSServiceRegisterProc>(
-		_sharedLibrary.getSymbol("DNSServiceRegister"))),
-	resolveService(static_cast<DNSServiceResolveProc>(
-		_sharedLibrary.getSymbol("DNSServiceResolve"))),
-	queryRecord(static_cast<DNSServiceQueryRecordProc>(
-		_sharedLibrary.getSymbol("DNSServiceQueryRecord"))),
-	getProperty(static_cast<DNSServiceGetPropertyProc>(
-		_sharedLibrary.getSymbol("DNSServiceGetProperty"))),
-	makeFullName(static_cast<DNSServiceConstructFullNameProc>(
-		_sharedLibrary.getSymbol("DNSServiceConstructFullName"))),
-	deallocate(static_cast<DNSServiceRefDeallocateProc>(
-		_sharedLibrary.getSymbol("DNSServiceRefDeallocate"))),
-	getSocketFD(static_cast<DNSServiceRefSockFDProc>(
-		_sharedLibrary.getSymbol("DNSServiceRefSockFD"))),
-	processResult(static_cast<DNSServiceProcessResultProc>(
-		_sharedLibrary.getSymbol("DNSServiceProcessResult"))),
-	txtRecordCreate(static_cast<TXTRecordCreateProc>(
-		_sharedLibrary.getSymbol("TXTRecordCreate"))),
-	txtRecordDeallocate(static_cast<TXTRecordDeallocateProc>(
-		_sharedLibrary.getSymbol("TXTRecordDeallocate"))),
-	txtRecordGetLength(static_cast<TXTRecordGetLengthProc>(
-		_sharedLibrary.getSymbol("TXTRecordGetLength"))),
-	txtRecordGetBytesPtr(static_cast<TXTRecordGetBytesPtrProc>(
-		_sharedLibrary.getSymbol("TXTRecordGetBytesPtr"))),
-	txtRecordContainsKey(static_cast<TXTRecordContainsKeyProc>(
-		_sharedLibrary.getSymbol("TXTRecordContainsKey"))),
-	txtRecordCountKeys(static_cast<TXTRecordCountKeysProc>(
-		_sharedLibrary.getSymbol("TXTRecordGetCount"))),
-	txtRecordGetItemAtIndex(static_cast<TXTRecordGetItemAtIndexProc>(
-		_sharedLibrary.getSymbol("TXTRecordGetItemAtIndex"))),
-	txtRecordGetValue(static_cast<TXTRecordGetValuePtrProc>(
-		_sharedLibrary.getSymbol("TXTRecordGetValuePtr"))),
-	txtRecordSetValue(static_cast<TXTRecordSetValueProc>(
-		_sharedLibrary.getSymbol("TXTRecordSetValue"))),
-	_thread("ServiceDiscoveryImpl::run")
+	: _sharedLibrary("dnssd.dll"),
+	  browseServices(static_cast<DNSServiceBrowseProc>(
+		  _sharedLibrary.getSymbol("DNSServiceBrowse"))),
+	  registerService(static_cast<DNSServiceRegisterProc>(
+		  _sharedLibrary.getSymbol("DNSServiceRegister"))),
+	  resolveService(static_cast<DNSServiceResolveProc>(
+		  _sharedLibrary.getSymbol("DNSServiceResolve"))),
+	  queryRecord(static_cast<DNSServiceQueryRecordProc>(
+		  _sharedLibrary.getSymbol("DNSServiceQueryRecord"))),
+	  getProperty(static_cast<DNSServiceGetPropertyProc>(
+		  _sharedLibrary.getSymbol("DNSServiceGetProperty"))),
+	  makeFullName(static_cast<DNSServiceConstructFullNameProc>(
+		  _sharedLibrary.getSymbol("DNSServiceConstructFullName"))),
+	  deallocate(static_cast<DNSServiceRefDeallocateProc>(
+		  _sharedLibrary.getSymbol("DNSServiceRefDeallocate"))),
+	  getSocketFD(static_cast<DNSServiceRefSockFDProc>(
+		  _sharedLibrary.getSymbol("DNSServiceRefSockFD"))),
+	  processResult(static_cast<DNSServiceProcessResultProc>(
+		  _sharedLibrary.getSymbol("DNSServiceProcessResult"))),
+	  txtRecordCreate(static_cast<TXTRecordCreateProc>(
+		  _sharedLibrary.getSymbol("TXTRecordCreate"))),
+	  txtRecordDeallocate(static_cast<TXTRecordDeallocateProc>(
+		  _sharedLibrary.getSymbol("TXTRecordDeallocate"))),
+	  txtRecordGetLength(static_cast<TXTRecordGetLengthProc>(
+		  _sharedLibrary.getSymbol("TXTRecordGetLength"))),
+	  txtRecordGetBytesPtr(static_cast<TXTRecordGetBytesPtrProc>(
+		  _sharedLibrary.getSymbol("TXTRecordGetBytesPtr"))),
+	  txtRecordContainsKey(static_cast<TXTRecordContainsKeyProc>(
+		  _sharedLibrary.getSymbol("TXTRecordContainsKey"))),
+	  txtRecordCountKeys(static_cast<TXTRecordCountKeysProc>(
+		  _sharedLibrary.getSymbol("TXTRecordGetCount"))),
+	  txtRecordGetItemAtIndex(static_cast<TXTRecordGetItemAtIndexProc>(
+		  _sharedLibrary.getSymbol("TXTRecordGetItemAtIndex"))),
+	  txtRecordGetValue(static_cast<TXTRecordGetValuePtrProc>(
+		  _sharedLibrary.getSymbol("TXTRecordGetValuePtr"))),
+	  txtRecordSetValue(static_cast<TXTRecordSetValueProc>(
+		  _sharedLibrary.getSymbol("TXTRecordSetValue"))),
+	  _thread("ServiceDiscoveryImpl::run")
 {
 }
-
 
 ServiceDiscoveryImpl::~ServiceDiscoveryImpl()
 {
@@ -589,7 +563,6 @@ ServiceDiscoveryImpl::~ServiceDiscoveryImpl()
 	std::for_each(sdRefs.begin(), sdRefs.end(), deallocate);
 }
 
-
 bool ServiceDiscoveryImpl::isRunning(DNSServiceRef sdRef) const
 {
 	ScopedLock lock(_mutex);
@@ -599,7 +572,6 @@ bool ServiceDiscoveryImpl::isRunning(DNSServiceRef sdRef) const
 
 	return (pos != _activeRefs.end());
 }
-
 
 void ServiceDiscoveryImpl::start(DNSServiceRef sdRef)
 {
@@ -616,7 +588,6 @@ void ServiceDiscoveryImpl::start(DNSServiceRef sdRef)
 	}
 }
 
-
 void ServiceDiscoveryImpl::stop(DNSServiceRef sdRef)
 {
 	ScopedLock lock(_mutex);
@@ -626,12 +597,11 @@ void ServiceDiscoveryImpl::stop(DNSServiceRef sdRef)
 	deallocate(sdRef);
 }
 
-
 void ServiceDiscoveryImpl::run()
 {
 	Debugger::print("Starting service discovery thread...");
 
-	const timeval timeout = { 0, 10000 };
+	const timeval timeout = {0, 10000};
 
 	fd_set readfds;
 
@@ -642,18 +612,21 @@ void ServiceDiscoveryImpl::run()
 		ScopedLock lock(_mutex);
 
 		// check stopping condition now
-		if (_activeRefs.empty()) break;
+		if (_activeRefs.empty())
+			break;
 
 		std::memset(&readfds, 0, sizeof(fd_set));
 		assert(_activeRefs.size() <= FD_SETSIZE);
 		for (std::list<DNSServiceRef>::const_iterator it =
-			_activeRefs.begin(); it != _activeRefs.end(); ++it)
+				 _activeRefs.begin();
+			 it != _activeRefs.end(); ++it)
 		{
 			const int fd = getSocketFD(*it);
 #pragma warning(push)
-#pragma warning(disable:4127)
-#pragma warning(disable:4389)
-			if (fd > 0) FD_SET(fd, &readfds);
+#pragma warning(disable : 4127)
+#pragma warning(disable : 4389)
+			if (fd > 0)
+				FD_SET(fd, &readfds);
 #pragma warning(pop)
 		}
 
@@ -662,7 +635,7 @@ void ServiceDiscoveryImpl::run()
 		if (returnCode == SOCKET_ERROR)
 		{
 			Debugger::print("select() failed with error: " +
-				Platform::Error::describe(WSAGetLastError()));
+							Platform::Error::describe(WSAGetLastError()));
 
 			// prevent running a tight loop if select errors on every call
 			Thread::sleep(timeout.tv_sec * 1000 + timeout.tv_usec / 1000);
@@ -679,10 +652,10 @@ void ServiceDiscoveryImpl::run()
 					DNSServiceErrorType error;
 
 					{
-					// prevent deadlock
-					ScopedUnlock unlock(_mutex);
-					// trigger callback function
-					error = processResult(sdRef);
+						// prevent deadlock
+						ScopedUnlock unlock(_mutex);
+						// trigger callback function
+						error = processResult(sdRef);
 					}
 
 					switch (error)
@@ -707,27 +680,21 @@ void ServiceDiscoveryImpl::run()
 	Debugger::print("Exiting service discovery thread...");
 }
 
-
 //------------------------------------------------------------------------------
 
-
-ServiceDiscovery::TXTRecord::TXTRecord(const void* const buf, const uint16_t len)
-:
-	_buf(buf),
-	_len(len)
+ServiceDiscovery::TXTRecord::TXTRecord(const void *const buf, const uint16_t len)
+	: _buf(buf),
+	  _len(len)
 {
 }
 
-
 ServiceDiscovery::TXTRecord::TXTRecord()
-:
-	_buf(0),
-	_len(0)
+	: _buf(0),
+	  _len(0)
 {
 	ServiceDiscovery::impl().txtRecordCreate(&_ref, 0, NULL);
 	put("txtvers", "1");
 }
-
 
 ServiceDiscovery::TXTRecord::~TXTRecord()
 {
@@ -735,15 +702,13 @@ ServiceDiscovery::TXTRecord::~TXTRecord()
 		ServiceDiscovery::impl().txtRecordDeallocate(&_ref);
 }
 
-
-const void* ServiceDiscovery::TXTRecord::buf() const
+const void *ServiceDiscovery::TXTRecord::buf() const
 {
 	if (_buf)
 		return _buf;
 
 	return ServiceDiscovery::impl().txtRecordGetBytesPtr(&_ref);
 }
-
 
 uint16_t ServiceDiscovery::TXTRecord::len() const
 {
@@ -753,22 +718,21 @@ uint16_t ServiceDiscovery::TXTRecord::len() const
 	return ServiceDiscovery::impl().txtRecordGetLength(&_ref);
 }
 
-
 std::string ServiceDiscovery::TXTRecord::str() const
 {
-	const void* const buf = this->buf();
+	const void *const buf = this->buf();
 	const uint16_t len = this->len();
 	const uint16_t num = ServiceDiscovery::impl().txtRecordCountKeys(len, buf);
-	std::vector<char> key(std::numeric_limits<uint8_t>::max() + 1);
+	std::vector<char> key((std::numeric_limits<uint8_t>::max)() + 1);
 	std::string str;
 
 	for (uint16_t idx = 0; idx < num; ++idx)
 	{
 		uint8_t siz;
-		const void* val;
+		const void *val;
 		const DNSServiceErrorType error =
 			ServiceDiscovery::impl().txtRecordGetItemAtIndex(len, buf, idx,
-				static_cast<uint16_t>(key.size()), &key[0], &siz, &val);
+															 static_cast<uint16_t>(key.size()), &key[0], &siz, &val);
 		if (error != kDNSServiceErr_NoError)
 		{
 			throw std::runtime_error(Poco::format(
@@ -779,33 +743,29 @@ std::string ServiceDiscovery::TXTRecord::str() const
 			str.append(" ");
 		str.append(&key[0]);
 		str.append("=");
-		str.append(static_cast<const char*>(val), siz);
+		str.append(static_cast<const char *>(val), siz);
 	}
 	return str;
 }
 
-
-bool ServiceDiscovery::TXTRecord::has(const std::string& key) const
+bool ServiceDiscovery::TXTRecord::has(const std::string &key) const
 {
 	return (0 != ServiceDiscovery::impl().txtRecordContainsKey(len(), buf(), key.c_str()));
 }
 
-
-const void* ServiceDiscovery::TXTRecord::get(const std::string& key, uint8_t& len) const
+const void *ServiceDiscovery::TXTRecord::get(const std::string &key, uint8_t &len) const
 {
 	return ServiceDiscovery::impl().txtRecordGetValue(this->len(), buf(), key.c_str(), &len);
 }
 
-
-std::string ServiceDiscovery::TXTRecord::get(const std::string& key) const
+std::string ServiceDiscovery::TXTRecord::get(const std::string &key) const
 {
 	uint8_t len;
-	const void* val = get(key, len);
-	return std::string(static_cast<const char*>(val), len);
+	const void *val = get(key, len);
+	return std::string(static_cast<const char *>(val), len);
 }
 
-
-void ServiceDiscovery::TXTRecord::put(const std::string& key, const void* const val, const uint8_t len)
+void ServiceDiscovery::TXTRecord::put(const std::string &key, const void *const val, const uint8_t len)
 {
 	const DNSServiceErrorType error = ServiceDiscovery::impl().txtRecordSetValue(&_ref, key.c_str(), len, val);
 	if (error != kDNSServiceErr_NoError)
@@ -814,18 +774,16 @@ void ServiceDiscovery::TXTRecord::put(const std::string& key, const void* const 
 	}
 }
 
-
-void ServiceDiscovery::TXTRecord::put(const std::string& key, const std::string& val)
+void ServiceDiscovery::TXTRecord::put(const std::string &key, const std::string &val)
 {
-	if (val.length() > std::numeric_limits<uint8_t>::max())
+	if (val.length() > (std::numeric_limits<uint8_t>::max)())
 	{
 		throw std::invalid_argument("val.length() > std::numeric_limits<uint8_t>::max()");
 	}
 	put(key, val.c_str(), static_cast<uint8_t>(val.length()));
 }
 
-
-bool ServiceDiscovery::TXTRecord::test(const std::string& key, const std::string& regex) const
+bool ServiceDiscovery::TXTRecord::test(const std::string &key, const std::string &regex) const
 {
 	return std::regex_match(get(key), std::regex(regex));
 }

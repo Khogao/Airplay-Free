@@ -17,7 +17,6 @@
 #ifndef Options_h
 #define Options_h
 
-
 #include "DeviceInfo.h"
 #include <map>
 #include <set>
@@ -27,7 +26,6 @@
 #include <Poco/Notification.h>
 #include <Poco/SharedPtr.h>
 
-
 class Options
 {
 public:
@@ -36,9 +34,11 @@ public:
 	static SharedPtr getOptions();
 	static void setOptions(SharedPtr);
 
-	static void addObserver(const Poco::AbstractObserver&);
-	static void removeObserver(const Poco::AbstractObserver&);
+	static void addObserver(const Poco::AbstractObserver &);
+	static void removeObserver(const Poco::AbstractObserver &);
 	static void postNotification(Poco::Notification::Ptr);
+
+	Options();
 
 public:
 	bool getVolumeControl() const;
@@ -48,16 +48,20 @@ public:
 	bool getResetOnPause() const;
 	void setResetOnPause(bool);
 
-	const DeviceInfoSet& devices() const;
-	DeviceInfoSet& devices();
+	const DeviceInfoSet &devices() const;
+	DeviceInfoSet &devices();
 
-	bool isActivated(const std::string& deviceName) const;
-	void setActivated(const std::string& deviceName, bool);
-	const std::string& getPassword(const std::string& deviceName) const;
-	bool getRememberPassword(const std::string& deviceName) const;
-	void setPassword(const std::string& deviceName, const std::string& password,
-		bool rememberPassword);
-	void clearPassword(const std::string& deviceName);
+	// Activation check removed - always returns true
+	bool isActivated(const std::string &deviceName) const { return true; }
+	void setActivated(const std::string &deviceName, bool) { /* No-op */ }
+
+	void setBypassActivation(bool bypass) { /* No-op */ }
+
+	const std::string &getPassword(const std::string &deviceName) const;
+	bool getRememberPassword(const std::string &deviceName) const;
+	void setPassword(const std::string &deviceName, const std::string &password,
+					 bool rememberPassword);
+	void clearPassword(const std::string &deviceName);
 
 private:
 	bool _volumeControl;
@@ -65,14 +69,13 @@ private:
 	bool _resetOnPause;
 
 	DeviceInfoSet _devices;
-	std::set<std::string> _activatedDevices;
-	std::map<std::string,std::pair<std::string,bool>> _devicePasswords;
+	// _activatedDevices removed - activation check disabled
+	std::map<std::string, std::pair<std::string, bool>> _devicePasswords;
+	// _bypassActivation removed - activation check disabled
 
-	friend bool operator ==(const Options&, const Options&);
+	friend bool operator==(const Options &, const Options &);
 };
 
-
-bool operator ==(const Options&, const Options&);
-
+bool operator==(const Options &, const Options &);
 
 #endif // Options_h

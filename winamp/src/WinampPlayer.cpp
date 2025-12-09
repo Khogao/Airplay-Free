@@ -43,35 +43,36 @@
 
 using std::exception;
 
+static buffer_t ToJPEG(ARGB32 *const data, const int wdth, const int hght,
+					   api_service *const apiService, api_memmgr *const memMgmtService);
 
-static buffer_t ToJPEG(ARGB32* const data, const int wdth, const int hght,
-	api_service* const apiService, api_memmgr* const memMgmtService);
-
-
-static std::string ToUTF8(const wchar_t* const wideCharString)
+static std::string ToUTF8(const wchar_t *const wideCharString)
 {
-	assert(wideCharString != NULL); std::string multiByteString;
+	assert(wideCharString != NULL);
+	std::string multiByteString;
 	Platform::Charset::toUTF8(wideCharString, multiByteString);
 
 	return multiByteString;
 }
 
-
 static void SendMessageWithTimeout(HWND hWnd, UINT uMsg, LPARAM lPrm, WPARAM wPrm,
-	DWORD* const pErr = NULL, DWORD_PTR* const pRet = NULL)
+								   DWORD *const pErr = NULL, DWORD_PTR *const pRet = NULL)
 {
-	if (pErr) *pErr = 0;
-	if (pRet) *pRet = 0;
+	if (pErr)
+		*pErr = 0;
+	if (pRet)
+		*pRet = 0;
 
 	if (!SendMessageTimeout(hWnd, uMsg, wPrm, lPrm, SMTO_NORMAL, 250, pRet))
 	{
-		if (pErr) *pErr = GetLastError();
-		if (pRet) *pRet = 0;
+		if (pErr)
+			*pErr = GetLastError();
+		if (pRet)
+			*pRet = 0;
 	}
 }
 
-
-static void GetBasicFileInfo(time_t& length, const wchar_t* const filePath, HWND hWnd)
+static void GetBasicFileInfo(time_t &length, const wchar_t *const filePath, HWND hWnd)
 {
 	basicFileInfoStructW fileInfo;
 	fileInfo.filename = filePath;
@@ -80,16 +81,15 @@ static void GetBasicFileInfo(time_t& length, const wchar_t* const filePath, HWND
 	fileInfo.titlelen = 0;
 	fileInfo.length = 0;
 
-	SendMessageWithTimeout(hWnd, WM_WA_IPC, IPC_GET_BASIC_FILE_INFOW, (WPARAM) &fileInfo);
+	SendMessageWithTimeout(hWnd, WM_WA_IPC, IPC_GET_BASIC_FILE_INFOW, (WPARAM)&fileInfo);
 	if (fileInfo.length > 0)
 	{
 		length = static_cast<time_t>(fileInfo.length) * 1000;
 	}
 }
 
-
-static void GetTextualFileInfo(std::string& infoText, const wchar_t* const infoType,
-	const wchar_t* const filePath, HWND hWnd)
+static void GetTextualFileInfo(std::string &infoText, const wchar_t *const infoType,
+							   const wchar_t *const filePath, HWND hWnd)
 {
 	wchar_t wideCharString[128] = {L'\0'};
 
@@ -99,33 +99,32 @@ static void GetTextualFileInfo(std::string& infoText, const wchar_t* const infoT
 	fileInfo.ret = wideCharString;
 	fileInfo.retlen = (sizeof(wideCharString) / sizeof(wchar_t)) - 1;
 
-	SendMessageWithTimeout(hWnd, WM_WA_IPC, IPC_GET_EXTENDED_FILE_INFOW, (WPARAM) &fileInfo);
+	SendMessageWithTimeout(hWnd, WM_WA_IPC, IPC_GET_EXTENDED_FILE_INFOW, (WPARAM)&fileInfo);
 	if (fileInfo.ret[0] != L'\0')
 	{
 		infoText = ToUTF8(fileInfo.ret);
 	}
 }
 
-
-static void GetVisualFileInfo(buffer_t& imageData, std::string& imageType,
-	const wchar_t* const infoType, const wchar_t* const filePath,
-	api_service* const apiService, api_memmgr* const memMgmtService)
+static void GetVisualFileInfo(buffer_t &imageData, std::string &imageType,
+							  const wchar_t *const infoType, const wchar_t *const filePath,
+							  api_service *const apiService, api_memmgr *const memMgmtService)
 {
 	const size_t n = apiService->service_getNumServices(
-						svc_albumArtProvider::getServiceType());
+		svc_albumArtProvider::getServiceType());
 	for (size_t i = 0; i < n; ++i)
 	{
-		waServiceFactory* const aapServiceFactory =
+		waServiceFactory *const aapServiceFactory =
 			apiService->service_enumService(svc_albumArtProvider::getServiceType(), i);
 		if (aapServiceFactory != NULL)
 		{
-			svc_albumArtProvider* const aapService =
-				(svc_albumArtProvider*) aapServiceFactory->getInterface();
+			svc_albumArtProvider *const aapService =
+				(svc_albumArtProvider *)aapServiceFactory->getInterface();
 			if (aapService != NULL)
 			{
-				void*     data = 0;
-				size_t    size = 0;
-				wchar_t*  type = 0;
+				void *data = 0;
+				size_t size = 0;
+				wchar_t *type = 0;
 				const int code = aapService->GetAlbumArtData(
 					filePath, infoType, &data, &size, &type);
 				if (code == ALBUMARTPROVIDER_SUCCESS && data != 0)
@@ -139,8 +138,10 @@ static void GetVisualFileInfo(buffer_t& imageData, std::string& imageType,
 						i = n; // break out of loop after cleanup
 					}
 
-					if (data) memMgmtService->sysFree(data);
-					if (type) memMgmtService->sysFree(type);
+					if (data)
+						memMgmtService->sysFree(data);
+					if (type)
+						memMgmtService->sysFree(type);
 				}
 
 				aapServiceFactory->releaseInterface(aapService);
@@ -151,22 +152,21 @@ static void GetVisualFileInfo(buffer_t& imageData, std::string& imageType,
 	}
 }
 
-
-static void GetVisualFileInfo2(buffer_t& imageData, std::string& imageType,
-	const wchar_t* const infoType, const wchar_t* const filePath,
-	api_service* const apiService, api_memmgr* const memMgmtService)
+static void GetVisualFileInfo2(buffer_t &imageData, std::string &imageType,
+							   const wchar_t *const infoType, const wchar_t *const filePath,
+							   api_service *const apiService, api_memmgr *const memMgmtService)
 {
-	waServiceFactory* const aaServiceFactory =
+	waServiceFactory *const aaServiceFactory =
 		apiService->service_getServiceByGuid(albumArtGUID);
 	if (aaServiceFactory != NULL)
 	{
-		api_albumart* const aaService =
-			(api_albumart*) aaServiceFactory->getInterface();
+		api_albumart *const aaService =
+			(api_albumart *)aaServiceFactory->getInterface();
 		if (aaService != NULL)
 		{
-			int       wdth = 0;
-			int       hght = 0;
-			ARGB32*   data = 0;
+			int wdth = 0;
+			int hght = 0;
+			ARGB32 *data = 0;
 			const int code = aaService->GetAlbumArt(
 				filePath, infoType, &wdth, &hght, &data);
 			if (code == ALBUMART_SUCCESS && data != 0)
@@ -177,7 +177,8 @@ static void GetVisualFileInfo2(buffer_t& imageData, std::string& imageType,
 					imageType = "image/jpeg";
 				}
 
-				if (data) memMgmtService->sysFree(data);
+				if (data)
+					memMgmtService->sysFree(data);
 			}
 
 			aaServiceFactory->releaseInterface(aaService);
@@ -187,37 +188,35 @@ static void GetVisualFileInfo2(buffer_t& imageData, std::string& imageType,
 	}
 }
 
-
-static buffer_t ToJPEG(ARGB32* const data, const int wdth, const int hght,
-	api_service* const apiService, api_memmgr* const memMgmtService)
+static buffer_t ToJPEG(ARGB32 *const data, const int wdth, const int hght,
+					   api_service *const apiService, api_memmgr *const memMgmtService)
 {
 	buffer_t jpeg(0);
 
 	const size_t n = apiService->service_getNumServices(
-						svc_imageWriter::getServiceType());
+		svc_imageWriter::getServiceType());
 	for (size_t i = 0; i < n; ++i)
 	{
-		waServiceFactory* const imgServiceFactory =
+		waServiceFactory *const imgServiceFactory =
 			apiService->service_enumService(svc_imageWriter::getServiceType(), i);
 		if (imgServiceFactory != NULL)
 		{
-			svc_imageWriter* const imgService =
-				(svc_imageWriter*) imgServiceFactory->getInterface();
+			svc_imageWriter *const imgService =
+				(svc_imageWriter *)imgServiceFactory->getInterface();
 			if (imgService != NULL)
 			{
-				if (imgService->bitDepthSupported(32)
-					&& imgService->getImageTypeName() != NULL
-					&& imgService->getImageTypeName() == std::wstring(L"JPEG"))
+				if (imgService->bitDepthSupported(32) && imgService->getImageTypeName() != NULL && imgService->getImageTypeName() == std::wstring(L"JPEG"))
 				{
-					int   jpegSize = 0;
-					void* jpegData = imgService->convert(data, 32, wdth, hght, &jpegSize);
+					int jpegSize = 0;
+					void *jpegData = imgService->convert(data, 32, wdth, hght, &jpegSize);
 					if (jpegData != NULL && jpegSize > 0)
 					{
 						jpeg.resize(jpegSize);
 						std::memcpy(&jpeg[0], jpegData, jpegSize);
 					}
 
-					if (jpegData) memMgmtService->sysFree(jpegData);
+					if (jpegData)
+						memMgmtService->sysFree(jpegData);
 				}
 
 				imgServiceFactory->releaseInterface(imgService);
@@ -230,18 +229,15 @@ static buffer_t ToJPEG(ARGB32* const data, const int wdth, const int hght,
 	return jpeg;
 }
 
-
 static inline bool IsMediaMonkey()
 {
 	return (FindWindow(TEXT("TFMainWindow"), NULL) != NULL);
 }
 
-
 static inline HWND GetMusicBeeIPC()
 {
 	return FindWindow(NULL, TEXT("MusicBee IPC Interface"));
 }
-
 
 static inline bool IsMusicBee()
 {
@@ -251,13 +247,12 @@ static inline bool IsMusicBee()
 		// check if the MusicBee IPC window is in the same process as the player
 
 		HINSTANCE exeInstance = GetModuleHandle(NULL);
-		HINSTANCE ipcInstance = (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE);
+		HINSTANCE ipcInstance = (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE);
 
 		return (exeInstance != NULL && exeInstance == ipcInstance);
 	}
 	return false;
 }
-
 
 static DWORD_PTR SendMusicBeeIPC(WPARAM wParam, LPARAM lParam = 0, HWND hWnd = GetMusicBeeIPC())
 {
@@ -281,13 +276,13 @@ static DWORD_PTR SendMusicBeeIPC(WPARAM wParam, LPARAM lParam = 0, HWND hWnd = G
 	return result;
 }
 
-
 static std::string ReadIpcText(LRESULT result, HWND window)
 {
 	std::string string;
 
 	BYTE idx = LOBYTE(result), off = HIBYTE(result);
-	char mmf[32]; sprintf_s(mmf, 32, "mbipc_mmf_%d", (int) idx);
+	char mmf[32];
+	sprintf_s(mmf, 32, "mbipc_mmf_%d", (int)idx);
 
 	HANDLE mmfh = OpenFileMappingA(FILE_MAP_READ, FALSE, mmf);
 	if (mmfh != NULL)
@@ -295,7 +290,7 @@ static std::string ReadIpcText(LRESULT result, HWND window)
 		LPVOID view = MapViewOfFile(mmfh, FILE_MAP_READ, 0, 0, 0);
 		if (view != NULL)
 		{
-			char* mptr = (char*) view;
+			char *mptr = (char *)view;
 
 			mptr += 8;
 			mptr += off;
@@ -323,23 +318,20 @@ static std::string ReadIpcText(LRESULT result, HWND window)
 	return string;
 }
 
-
 static DWORD mmCookie = 0;
-extern "C" __declspec(dllexport)
-void MMSetInterfaceCookie(DWORD cookie)
+extern "C" __declspec(dllexport) void MMSetInterfaceCookie(DWORD cookie)
 {
 	mmCookie = cookie;
 }
 
-
 struct hresult_error : exception
 {
 	hresult_error(HRESULT result)
-	: exception(hresult_string(result).c_str())
+		: exception(hresult_string(result).c_str())
 	{
 	}
-	hresult_error(HRESULT result, const char* const context)
-	: exception(hresult_string(result).append(" from ").append(context).c_str())
+	hresult_error(HRESULT result, const char *const context)
+		: exception(hresult_string(result).append(" from ").append(context).c_str())
 	{
 	}
 	static std::string hresult_string(HRESULT result)
@@ -348,22 +340,24 @@ struct hresult_error : exception
 	}
 };
 
-#define DO(exp) {HRESULT hr(exp); if (FAILED(hr)) throw hresult_error(hr,#exp);}
+#define DO(exp)                            \
+	{                                      \
+		HRESULT hr(exp);                   \
+		if (FAILED(hr))                    \
+			throw hresult_error(hr, #exp); \
+	}
 
 #pragma endregion
 
 //------------------------------------------------------------------------------
 
-
-WinampPlayer::WinampPlayer(HWND& playerWindow)
-:
-	_apiService(NULL),
-	_memMgmtService(NULL),
-	_memMgmtServiceFactory(NULL),
-	_playerWindow(playerWindow)
+WinampPlayer::WinampPlayer(HWND &playerWindow)
+	: _apiService(NULL),
+	  _memMgmtService(NULL),
+	  _memMgmtServiceFactory(NULL),
+	  _playerWindow(playerWindow)
 {
 }
-
 
 void WinampPlayer::play()
 {
@@ -377,7 +371,6 @@ void WinampPlayer::play()
 	}
 }
 
-
 void WinampPlayer::pause()
 {
 	if (!IsMusicBee())
@@ -389,7 +382,6 @@ void WinampPlayer::pause()
 		SendMusicBeeIPC(102);
 	}
 }
-
 
 void WinampPlayer::stop()
 {
@@ -403,7 +395,6 @@ void WinampPlayer::stop()
 	}
 }
 
-
 void WinampPlayer::restart()
 {
 	if (!IsMusicBee())
@@ -412,10 +403,12 @@ void WinampPlayer::restart()
 		const uint8_t status = sendMessage<uint8_t>(IPC_ISPLAYING);
 
 		// if player is playing, seek to start of track
-		if (status > 0) sendMessage<void>(IPC_JUMPTOTIME, 0);
+		if (status > 0)
+			sendMessage<void>(IPC_JUMPTOTIME, 0);
 
 		// if player is paused, resume playback
-		if (status == 3) play();
+		if (status == 3)
+			play();
 	}
 	else
 	{
@@ -426,17 +419,18 @@ void WinampPlayer::restart()
 			const uint8_t status = static_cast<uint8_t>(result);
 
 			// if player is playing, seek to start of track
-			if (status == 3 || status == 6) SendMusicBeeIPC(111, 0);
+			if (status == 3 || status == 6)
+				SendMusicBeeIPC(111, 0);
 
 			// if playing, pause so position metadata is updated when resuming
-			if (status == 3) pause();
+			if (status == 3)
+				pause();
 
 			// resume playback
 			play();
 		}
 	}
 }
-
 
 void WinampPlayer::startNext()
 {
@@ -450,7 +444,6 @@ void WinampPlayer::startNext()
 	}
 }
 
-
 void WinampPlayer::startPrev()
 {
 	if (!IsMusicBee())
@@ -463,13 +456,13 @@ void WinampPlayer::startPrev()
 	}
 }
 
-
 void WinampPlayer::increaseVolume()
 {
 	if (!IsMusicBee())
 	{
 		// each command raises volume by ~2%
-		sendCommand(40058); sendCommand(40058);
+		sendCommand(40058);
+		sendCommand(40058);
 	}
 	else
 	{
@@ -481,13 +474,13 @@ void WinampPlayer::increaseVolume()
 	}
 }
 
-
 void WinampPlayer::decreaseVolume()
 {
 	if (!IsMusicBee())
 	{
 		// each command lowers volume by ~2%
-		sendCommand(40059); sendCommand(40059);
+		sendCommand(40059);
+		sendCommand(40059);
 	}
 	else
 	{
@@ -499,7 +492,6 @@ void WinampPlayer::decreaseVolume()
 	}
 }
 
-
 void WinampPlayer::toggleMute()
 {
 	if (!IsMusicBee())
@@ -509,8 +501,10 @@ void WinampPlayer::toggleMute()
 		// send 'get volume' message to player
 		const uint8_t volume = sendMessage<uint8_t>(IPC_SETVOLUME, -666);
 
-		if (volume > 0) sendMessage<void>(IPC_SETVOLUME, 0);
-		else sendMessage<void>(IPC_SETVOLUME, previousVolume);
+		if (volume > 0)
+			sendMessage<void>(IPC_SETVOLUME, 0);
+		else
+			sendMessage<void>(IPC_SETVOLUME, previousVolume);
 
 		previousVolume = volume;
 	}
@@ -519,7 +513,6 @@ void WinampPlayer::toggleMute()
 		SendMusicBeeIPC(119, !SendMusicBeeIPC(118));
 	}
 }
-
 
 void WinampPlayer::toggleShuffle()
 {
@@ -533,18 +526,17 @@ void WinampPlayer::toggleShuffle()
 	}
 }
 
-
 //------------------------------------------------------------------------------
 
-
-time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
-	std::string& artist, buffer_t& artworkData, std::string& artworkType, shorts_t& listpos) const
+time_t WinampPlayer::getPlaybackMetadata(std::string &title, std::string &album,
+										 std::string &artist, buffer_t &artworkData, std::string &artworkType, shorts_t &listpos) const
 {
-	time_t length = 0; listpos = shorts_t(0,0);
+	time_t length = 0;
+	listpos = shorts_t(0, 0);
 	title.clear(), album.clear(), artist.clear();
 	artworkData.resize(0), artworkType.assign("image/none");
 
-	const wchar_t* const filePath = sendMessage<wchar_t*>(IPC_GET_PLAYING_FILENAME);
+	const wchar_t *const filePath = sendMessage<wchar_t *>(IPC_GET_PLAYING_FILENAME);
 	if (filePath != NULL && filePath[0] != L'\0')
 	{
 		GetBasicFileInfo(length, filePath, window());
@@ -555,18 +547,18 @@ time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
 		if (_apiService == NULL)
 		{
 			// try to initialize player service interfaces
-			const_cast<WinampPlayer*>(this)->initServices();
+			const_cast<WinampPlayer *>(this)->initServices();
 		}
 		if (_apiService != NULL && _memMgmtService != NULL)
 		{
 			GetVisualFileInfo(artworkData, artworkType, L"cover",
-							filePath, _apiService, _memMgmtService);
+							  filePath, _apiService, _memMgmtService);
 
 			if (artworkData.empty())
 			{
 				// try an alternate API for getting artwork
 				GetVisualFileInfo2(artworkData, artworkType, L"cover",
-								filePath, _apiService, _memMgmtService);
+								   filePath, _apiService, _memMgmtService);
 			}
 		}
 	}
@@ -586,14 +578,14 @@ time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
 		if (pos <= short_max)
 		{
 			assert(pos < len);
-			listpos = std::make_pair(pos + 1, len);
+			listpos = std::make_pair(static_cast<short>(pos + 1), static_cast<short>(len));
 		}
 	}
 
 	if (title.empty())
 	{
 		// try an alternate API for getting track title
-		const wchar_t* const wideCharTitle = sendMessage<wchar_t*>(IPC_GET_PLAYING_TITLE);
+		const wchar_t *const wideCharTitle = sendMessage<wchar_t *>(IPC_GET_PLAYING_TITLE);
 		if (wideCharTitle != NULL && wideCharTitle[0] != L'\0')
 		{
 			title = ToUTF8(wideCharTitle);
@@ -604,16 +596,16 @@ time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
 	{
 		// try MediaMonkey's COM API for getting track metadata
 
-		CComPtr<ISDBApplication > sdbApplication  = NULL;
-		CComPtr<ISDBPlayer      > sdbPlayer       = NULL;
-		CComPtr<ISDBSongData    > sdbSongData     = NULL;
+		CComPtr<ISDBApplication> sdbApplication = NULL;
+		CComPtr<ISDBPlayer> sdbPlayer = NULL;
+		CComPtr<ISDBSongData> sdbSongData = NULL;
 		CComPtr<ISDBAlbumArtList> sdbAlbumArtList = NULL;
 		CComPtr<ISDBAlbumArtItem> sdbAlbumArtItem = NULL;
-		CComPtr<ISDBImage       > sdbImage        = NULL;
+		CComPtr<ISDBImage> sdbImage = NULL;
 
-		BSTR imageType  = NULL;
-		BSTR songTitle  = NULL;
-		BSTR songAlbum  = NULL;
+		BSTR imageType = NULL;
+		BSTR songTitle = NULL;
+		BSTR songAlbum = NULL;
 		BSTR songArtist = NULL;
 
 		CoInitialize(NULL);
@@ -622,76 +614,89 @@ time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
 		{
 			if (mmCookie > 0)
 			{
-				try { CComPtr<IGlobalInterfaceTable> pGIT;
-				DO (pGIT.CoCreateInstance(CLSID_StdGlobalInterfaceTable, NULL, CLSCTX_INPROC_SERVER));
-				DO (pGIT->GetInterfaceFromGlobal(mmCookie, IID_ISDBApplication, (LPVOID*) &sdbApplication));
-				} CATCH_ALL
+				try
+				{
+					CComPtr<IGlobalInterfaceTable> pGIT;
+					DO(pGIT.CoCreateInstance(CLSID_StdGlobalInterfaceTable, NULL, CLSCTX_INPROC_SERVER));
+					DO(pGIT->GetInterfaceFromGlobal(mmCookie, IID_ISDBApplication, (LPVOID *)&sdbApplication));
+				}
+				CATCH_ALL
 			}
 			if (sdbApplication == NULL)
 			{
-				DO (sdbApplication.CoCreateInstance(CLSID_SDBApplication, NULL, CLSCTX_LOCAL_SERVER));
+				DO(sdbApplication.CoCreateInstance(CLSID_SDBApplication, NULL, CLSCTX_LOCAL_SERVER));
 			}
 
-			DO (sdbApplication->get_Player(&sdbPlayer));
+			DO(sdbApplication->get_Player(&sdbPlayer));
 
-			DO (sdbPlayer->get_CurrentSong(&sdbSongData));
+			DO(sdbPlayer->get_CurrentSong(&sdbSongData));
 
 			long songLength = 0;
-			DO (sdbSongData->get_SongLength(&songLength));
-			if (songLength > 0) length = songLength;
+			DO(sdbSongData->get_SongLength(&songLength));
+			if (songLength > 0)
+				length = songLength;
 
-			DO (sdbSongData->get_Title(&songTitle));
-			if (songTitle != NULL && songTitle[0] != L'\0') title = ToUTF8(songTitle);
+			DO(sdbSongData->get_Title(&songTitle));
+			if (songTitle != NULL && songTitle[0] != L'\0')
+				title = ToUTF8(songTitle);
 
 			if (title.empty())
 			{
 				BSTR songPath = NULL;
-				DO (sdbSongData->get_Path(&songPath));
+				DO(sdbSongData->get_Path(&songPath));
 				if (songPath != NULL && songPath[0] != L'\0')
 				{
-					const std::string path = ToUTF8(songPath);  char file[MAX_PATH];
+					const std::string path = ToUTF8(songPath);
+					char file[MAX_PATH];
 					title = (_splitpath_s(path.c_str(), NULL, 0, NULL, 0, file, sizeof(file), NULL, 0) ? path : file);
 				}
-				if (songPath != NULL) SysFreeString(songPath);
+				if (songPath != NULL)
+					SysFreeString(songPath);
 			}
 
-			DO (sdbSongData->get_AlbumName(&songAlbum));
-			if (songAlbum != NULL && songAlbum[0] != L'\0') album = ToUTF8(songAlbum);
+			DO(sdbSongData->get_AlbumName(&songAlbum));
+			if (songAlbum != NULL && songAlbum[0] != L'\0')
+				album = ToUTF8(songAlbum);
 
-			DO (sdbSongData->get_ArtistName(&songArtist));
-			if (songArtist != NULL && songArtist[0] != L'\0') artist = ToUTF8(songArtist);
+			DO(sdbSongData->get_ArtistName(&songArtist));
+			if (songArtist != NULL && songArtist[0] != L'\0')
+				artist = ToUTF8(songArtist);
 
-			DO (sdbSongData->get_AlbumArt(&sdbAlbumArtList));
+			DO(sdbSongData->get_AlbumArt(&sdbAlbumArtList));
 
 			long imageCount = 0;
-			DO (sdbAlbumArtList->get_Count(&imageCount));
+			DO(sdbAlbumArtList->get_Count(&imageCount));
 			if (imageCount > 0)
 			{
-				DO (sdbAlbumArtList->get_Item(0, &sdbAlbumArtItem));
+				DO(sdbAlbumArtList->get_Item(0, &sdbAlbumArtItem));
 
-				DO (sdbAlbumArtItem->get_Image(&sdbImage));
+				DO(sdbAlbumArtItem->get_Image(&sdbImage));
 
 				long imageData = 0;
-				DO (sdbImage->get_ImageData(&imageData));
+				DO(sdbImage->get_ImageData(&imageData));
 
 				long imageSize = 0;
-				DO (sdbImage->get_ImageDataLen(&imageSize));
+				DO(sdbImage->get_ImageDataLen(&imageSize));
 
-				DO (sdbImage->get_ImageFormat(&imageType));
+				DO(sdbImage->get_ImageFormat(&imageType));
 				if (imageType != NULL && imageType[0] != L'\0')
 				{
 					artworkData.resize(imageSize);
-					std::memcpy(&artworkData[0], (void*) imageData, imageSize);
+					std::memcpy(&artworkData[0], (void *)imageData, imageSize);
 					artworkType = ToUTF8(imageType);
 				}
 			}
 		}
 		CATCH_ALL
 
-		if (imageType != NULL)  SysFreeString(imageType);
-		if (songTitle != NULL)  SysFreeString(songTitle);
-		if (songAlbum != NULL)  SysFreeString(songAlbum);
-		if (songArtist != NULL) SysFreeString(songArtist);
+		if (imageType != NULL)
+			SysFreeString(imageType);
+		if (songTitle != NULL)
+			SysFreeString(songTitle);
+		if (songAlbum != NULL)
+			SysFreeString(songAlbum);
+		if (songArtist != NULL)
+			SysFreeString(songArtist);
 
 		CoUninitialize();
 	}
@@ -699,55 +704,65 @@ time_t WinampPlayer::getPlaybackMetadata(std::string& title, std::string& album,
 	{
 		// try MusicBee's IPC API for getting track metadata
 
-		DWORD_PTR result; HWND window = GetMusicBeeIPC();
+		DWORD_PTR result;
+		HWND window = GetMusicBeeIPC();
 
 		result = SendMusicBeeIPC(139, 00, window);
-		if (result > 0) length = (time_t) result;
+		if (result > 0)
+			length = (time_t)result;
 
 		result = SendMusicBeeIPC(154, 00, window);
-		if (result >= 0 && result < short_max) listpos.first = 1 + (short) result;
+		if (result >= 0 && result < short_max)
+			listpos.first = 1 + (short)result;
 
 		result = SendMusicBeeIPC(208, 00, window);
-		if (result > 0 && result <= short_max) listpos.second = (short) result;
+		if (result > 0 && result <= short_max)
+			listpos.second = (short)result;
 
 		result = SendMusicBeeIPC(142, 65, window);
-		if (result > 0) title = ReadIpcText(result, window);
+		if (result > 0)
+			title = ReadIpcText(result, window);
 
 		if (title.empty())
 		{
 			result = SendMusicBeeIPC(140, 00, window);
 			if (result > 0)
 			{
-				const std::string path = ReadIpcText(result, window);  char file[MAX_PATH];
+				const std::string path = ReadIpcText(result, window);
+				char file[MAX_PATH];
 				title = (_splitpath_s(path.c_str(), NULL, 0, NULL, 0, file, sizeof(file), NULL, 0) ? path : file);
 			}
 		}
 
 		result = SendMusicBeeIPC(142, 30, window);
-		if (result > 0) album = ReadIpcText(result, window);
+		if (result > 0)
+			album = ReadIpcText(result, window);
 
 		result = SendMusicBeeIPC(142, 32, window);
-		if (result > 0) artist = ReadIpcText(result, window);
+		if (result > 0)
+			artist = ReadIpcText(result, window);
 
 		result = SendMusicBeeIPC(145, 00, window);
-		if (result > 0) {
+		if (result > 0)
+		{
 			const std::string data(ReadIpcText(result, window));
-			if (data.size() > 25) { // some minimum image size required
-				int size = (data.size() * 3) / 4; artworkData.resize(size);
-				if (Base64Decode(&data[0], data.size(), &artworkData[0], &size)
-					&& std::memcmp(&artworkData[6], "JFIF", 4) == 0) // JPEG tag
+			if (data.size() > 25)
+			{ // some minimum image size required
+				int size = (data.size() * 3) / 4;
+				artworkData.resize(size);
+				if (Base64Decode(&data[0], data.size(), &artworkData[0], &size) && std::memcmp(&artworkData[6], "JFIF", 4) == 0) // JPEG tag
 				{
 					artworkData.resize(size);
 					artworkType = "image/jpeg";
 				}
-				else artworkData.clear();
+				else
+					artworkData.clear();
 			}
 		}
 	}
 
 	return std::max<time_t>(length, 0);
 }
-
 
 time_t WinampPlayer::getPlaybackPosition() const
 {
@@ -765,9 +780,7 @@ time_t WinampPlayer::getPlaybackPosition() const
 	return std::max<time_t>(offset, 0);
 }
 
-
 //------------------------------------------------------------------------------
-
 
 void WinampPlayer::freeServices()
 {
@@ -789,11 +802,10 @@ void WinampPlayer::freeServices()
 	}
 }
 
-
 void WinampPlayer::initServices()
 {
-	_apiService = sendMessage<api_service*>(IPC_GET_API_SERVICE);
-	if (_apiService == reinterpret_cast<api_service*>(1))
+	_apiService = sendMessage<api_service *>(IPC_GET_API_SERVICE);
+	if (_apiService == reinterpret_cast<api_service *>(1))
 	{
 		// service interface not supported
 		_apiService = NULL;
@@ -807,7 +819,7 @@ void WinampPlayer::initServices()
 			return;
 		}
 
-		_memMgmtService = static_cast<api_memmgr*>(_memMgmtServiceFactory->getInterface());
+		_memMgmtService = static_cast<api_memmgr *>(_memMgmtServiceFactory->getInterface());
 		if (_memMgmtService == NULL)
 		{
 			freeServices();
@@ -815,7 +827,6 @@ void WinampPlayer::initServices()
 		}
 	}
 }
-
 
 void WinampPlayer::sendCommand(const int param) const
 {
@@ -825,7 +836,7 @@ void WinampPlayer::sendCommand(const int param) const
 	assert(param > 0);
 	assert(window() > 0);
 
-	SendMessageWithTimeout(window(), WM_COMMAND, (LPARAM) 0, (WPARAM) param, &error, &result);
+	SendMessageWithTimeout(window(), WM_COMMAND, (LPARAM)0, (WPARAM)param, &error, &result);
 
 	if (error == ERROR_TIMEOUT)
 	{
@@ -850,7 +861,7 @@ type WinampPlayer::sendMessage(const long lParam, const int wParam) const
 	assert(lParam > 0);
 	assert(window() > 0);
 
-	SendMessageWithTimeout(window(), WM_WA_IPC, (LPARAM) lParam, (WPARAM) wParam, &error, &result);
+	SendMessageWithTimeout(window(), WM_WA_IPC, (LPARAM)lParam, (WPARAM)wParam, &error, &result);
 
 	if (error == ERROR_TIMEOUT)
 	{
@@ -861,5 +872,5 @@ type WinampPlayer::sendMessage(const long lParam, const int wParam) const
 		Debugger::printf("%s(%li, %i) failed with error: %s", __FUNCTION__, lParam, wParam, Platform::Error::describe(error).c_str());
 	}
 
-	return (type) result;
+	return (type)result;
 }
